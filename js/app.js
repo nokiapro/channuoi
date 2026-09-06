@@ -1961,7 +1961,7 @@ function renderFarm() {
     const fa = faMap[weather.icon] || 'fa-cloud-sun';
     weatherIconEl.innerHTML = `<i class="fa-solid ${fa}"></i>`;
   }
-  document.getElementById('weather-text').textContent = weather.text + ` (${Math.round(weather.mult * 100)}%)`;
+  const _wt = document.getElementById('weather-text'); if (_wt) _wt.textContent = weather.text + ` (${Math.round(weather.mult * 100)}%)`;
   updateCoins();
 
   const pens = Array.isArray(currentPlayer.pens) ? currentPlayer.pens : Object.values(currentPlayer.pens || {});
@@ -2111,7 +2111,7 @@ function openEmptyPenModal(plotId) {
   const tiers = (typeof Features !== 'undefined' && Features.PLOT_UPGRADE_TIERS)
     ? Features.PLOT_UPGRADE_TIERS : [];
   const higher = tiers.filter(x => x.mult > curMult);
-  let html = '<div class="pen-upgrade-box" style="margin-bottom:12px"><h4 class="pen-upgrade-title"><i class="fa-solid fa-bolt"></i> Ô #' + (plotId + 1) + ' · <span class="pen-mult-badge">x' + curMult + '</span></h4>';
+  let html = '<div class="pen-upgrade-box" style="margin-bottom:12px"><h4 class="pen-upgrade-title"><i class="fa-solid fa-bolt"></i> Chuồng #' + (plotId + 1) + ' · <span class="pen-mult-badge">x' + curMult + '</span></h4>';
   if (!higher.length) {
     html += '<p class="bulk-hint">Đã max x50</p></div>';
   } else {
@@ -2248,9 +2248,12 @@ function openPenModal(plotId) {
     </div>
   `;
 
-  document.getElementById('btn-care').style.display = ready || waterDisp.active ? 'none' : 'inline-flex';
-  document.getElementById('btn-feedAction').style.display = ready || fertDisp.active ? 'none' : 'inline-flex';
-  document.getElementById('btn-harvest').style.display = ready ? 'inline-flex' : 'none';
+  const _btnCare = document.getElementById('btn-care');
+  const _btnFeed = document.getElementById('btn-feed');
+  const _btnHarvest = document.getElementById('btn-harvest');
+  if (_btnCare) _btnCare.style.display = ready || waterDisp.active ? 'none' : 'inline-flex';
+  if (_btnFeed) _btnFeed.style.display = ready || fertDisp.active ? 'none' : 'inline-flex';
+  if (_btnHarvest) _btnHarvest.style.display = ready ? 'inline-flex' : 'none';
   
   const curMult = Number(pen.specialMult) || 1;
   const tiers = (typeof Features !== 'undefined' && Features.PLOT_UPGRADE_TIERS)
@@ -2332,25 +2335,25 @@ function softUpdatePenModal() {
 
   
   const btnCare = document.getElementById('btn-care');
-  const btnFert = document.getElementById('btn-feedAction');
+  const btnFert = document.getElementById('btn-feed');
   const btnHarvest = document.getElementById('btn-harvest');
   if (btnCare) btnCare.style.display = ready || waterDisp.active ? 'none' : 'inline-flex';
   if (btnFert) btnFert.style.display = ready || fertDisp.active ? 'none' : 'inline-flex';
   if (btnHarvest) btnHarvest.style.display = ready ? 'inline-flex' : 'none';
 }
 
-document.getElementById('btn-care').addEventListener('click', async () => {
+document.getElementById('btn-care')?.addEventListener('click', async () => {
   const res = await Game.waterPen(selectedPenId);
   showToast(res.msg, res.ok ? 'success' : 'error');
   closeModals();
   renderFarm();
 });
 
-document.getElementById('btn-feedAction').addEventListener('click', () => {
+document.getElementById('btn-feed')?.addEventListener('click', () => {
   openFertModal(selectedPenId);
 });
 
-document.getElementById('btn-harvest').addEventListener('click', async () => {
+document.getElementById('btn-harvest')?.addEventListener('click', async () => {
   const res = await Game.harvestPen(selectedPenId);
   showToast(res.msg, res.ok ? 'success' : 'error');
   closeModals();
@@ -2358,7 +2361,7 @@ document.getElementById('btn-harvest').addEventListener('click', async () => {
   updateCoins();
 });
 
-document.getElementById('btn-remove').addEventListener('click', async () => {
+document.getElementById('btn-remove')?.addEventListener('click', async () => {
   if (!confirm('Bạn chắc muốn nhổ bỏ con này?')) return;
   const res = await Game.removeAnimal(selectedPenId);
   showToast(res.msg, res.ok ? 'success' : 'error');
@@ -2533,13 +2536,13 @@ function openBulkModal(action) {
 
   const runBulk = async (n) => {
     if (bulkAction === 'fert' && !bulkFertId) {
-      showToast('Hãy chọn loại cám bón!', 'error');
+      showToast('Hãy chọn loại thức ăn!', 'error');
       return;
     }
     closeModals();
     let res;
     if (bulkAction === 'water') res = await Game.waterAll(n);
-    else if (bulkAction === 'fert') res = await Game.feedActionAll(n, bulkFertId);
+    else if (bulkAction === 'fert') res = await Game.feedAllPens(n, bulkFertId);
     else res = await Game.harvestAll(n);
     showToast(res.msg, res.ok ? 'success' : 'error');
     renderFarm();
@@ -2699,7 +2702,7 @@ function openFertModal(plotId) {
   const ids = Object.keys(ferts).filter(id => ferts[id] > 0);
 
   if (ids.length === 0) {
-    list.innerHTML = '<p class="empty-state">Bạn chưa có cám bón.<br>Hãy mua ở Cửa hàng → tab Thức ăn!</p>';
+    list.innerHTML = '<p class="empty-state">Bạn chưa có thức ăn.<br>Hãy mua ở Cửa hàng → tab Thức ăn!</p>';
   } else {
     ids.forEach(id => {
       const fert = Game.getFeed(id);
@@ -2953,7 +2956,7 @@ function renderShop() {
     grid.appendChild(hint);
     const penOpts = (currentPlayer && currentPlayer.pens ? currentPlayer.pens : []).map((pl, i) => {
       const sm = Game.getPenSpeedMult ? Game.getPenSpeedMult(pl) : 1;
-      return `<option value="${i}">Ô #${i + 1}${pl.animalId ? ' · nuôi' : ' · trống'} · x${sm}</option>`;
+      return `<option value="${i}">Chuồng #${i + 1}${pl.animalId ? ' · nuôi' : ' · trống'} · x${sm}</option>`;
     }).join('');
     packs.forEach(pack => {
       const card = document.createElement('div');
@@ -3693,7 +3696,7 @@ function renderInventory() {
   const fertEl = document.getElementById('inv-fert');
   const fertIds = Object.keys(ferts).filter(id => ferts[id] > 0);
   if (fertIds.length === 0) {
-    fertEl.innerHTML = '<p class="empty-state">Chưa có cám bón. Mua ở Cửa hàng → Thức ăn!</p>';
+    fertEl.innerHTML = '<p class="empty-state">Chưa có thức ăn. Mua ở Cửa hàng → Thức ăn!</p>';
   } else {
     fertEl.innerHTML = '<div class="inv-grid">' + fertIds.map(id => {
       const fert = Game.getFeed(id);

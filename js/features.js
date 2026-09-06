@@ -56,11 +56,11 @@ const Features = {
     currentPlayer.stats = currentPlayer.stats || {};
     currentPlayer.stats.spent = (currentPlayer.stats.spent || 0) + cost;
     if (typeof Game !== 'undefined' && Game.addActivity) {
-      Game.addActivity('Nâng ô #' + (plotId + 1) + ' → x' + tgt + ' (-' + cost + '🪙)');
+      Game.addActivity('Nâng chuồng #' + (plotId + 1) + ' → x' + tgt + ' (-' + cost + '🪙)');
     }
     await savePlayer();
     if (typeof updateCoins === 'function') updateCoins();
-    return { ok: true, msg: 'Ô #' + (plotId + 1) + ' đã lên x' + tgt + '!' };
+    return { ok: true, msg: 'Chuồng #' + (plotId + 1) + ' đã lên x' + tgt + '!' };
   },
 
   
@@ -188,11 +188,11 @@ const Features = {
     currentPlayer.stats = currentPlayer.stats || {};
     currentPlayer.stats.spent = (currentPlayer.stats.spent || 0) + pack.price;
     if (typeof Game !== 'undefined' && Game.addActivity) {
-      Game.addActivity('Boost ô #' + (plotId + 1) + ' ' + pack.name + ' (-' + pack.price + '🪙)');
+      Game.addActivity('Boost chuồng #' + (plotId + 1) + ' ' + pack.name + ' (-' + pack.price + '🪙)');
     }
     await savePlayer();
     if (typeof updateCoins === 'function') updateCoins();
-    return { ok: true, msg: 'Ô #' + (plotId + 1) + ' → ' + pack.name + '!' };
+    return { ok: true, msg: 'Chuồng #' + (plotId + 1) + ' → ' + pack.name + '!' };
   },
 
   
@@ -445,7 +445,7 @@ const Features = {
       for (let i = 0; i < pensAdd; i++) {
         currentPlayer.pens.push({
           id: currentPlayer.pens.length, animalId: null, raisedAt: null,
-          watered: false, waterCount: 0, lastCareed: null, feedId: null, feedActiondAt: null
+          watered: false, waterCount: 0, lastWatered: null, feedId: null, feedAt: null
         });
       }
       parts.push('+' + pensAdd + ' chuồng');

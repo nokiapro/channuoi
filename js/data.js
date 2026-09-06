@@ -3216,7 +3216,7 @@ function createDefaultPlayerData(uid, email, role) {
       raisedAt: null,
       watered: false,
       waterCount: 0,
-      lastCareed: null,
+      lastWatered: null,
       feedId: null
     })),
     inventory: {
@@ -3763,12 +3763,12 @@ function applyCriticalPlayLogToPlayer(player) {
     } else if (type === 'water' && pen.animalId) {
       pen.watered = true;
       pen.waterCount = Math.max(pen.waterCount || 0, d.waterCount || 1);
-      pen.lastCareed = d.at || e.t;
+      pen.lastWatered = d.at || e.t;
       earliest = earliest == null ? e.t : Math.min(earliest, e.t);
     } else if (type === 'fert' && pen.animalId && d.fertId) {
       if (!pen.feedId) {
         pen.feedId = d.fertId;
-        pen.feedActiondAt = d.at || e.t;
+        pen.feedAt = d.at || e.t;
       }
       earliest = earliest == null ? e.t : Math.min(earliest, e.t);
     } else if (type === 'harvest') {
@@ -3777,9 +3777,9 @@ function applyCriticalPlayLogToPlayer(player) {
         pen.raisedAt = null;
         pen.watered = false;
         pen.waterCount = 0;
-        pen.lastCareed = null;
+        pen.lastWatered = null;
         pen.feedId = null;
-        pen.feedActiondAt = null;
+        pen.feedAt = null;
       }
       earliest = earliest == null ? e.t : Math.min(earliest, e.t);
     }
@@ -3945,9 +3945,9 @@ function mergeRemoteAdminGifts(remote) {
         raisedAt: p.raisedAt || null,
         watered: !!p.watered,
         waterCount: typeof p.waterCount === 'number' ? p.waterCount : 0,
-        lastCareed: p.lastCareed || null,
+        lastWatered: p.lastWatered || null,
         feedId: p.feedId || null,
-        feedActiondAt: p.feedActiondAt || null,
+        feedAt: p.feedAt || null,
         specialMult: p.specialMult,
         specialId: p.specialId,
         specialName: p.specialName
@@ -4130,6 +4130,8 @@ function migratePlayerSchema(player) {
     if (p.fertId != null && !p.feedId) p.feedId = p.fertId;
     // feedActionrId typo leftovers
     if (p.feedActionrId != null && !p.feedId) p.feedId = p.feedActionrId;
+    if (p.fertilizedAt != null && !p.feedAt) p.feedAt = p.fertilizedAt;
+    if (p.lastCareed != null && !p.lastWatered) p.lastWatered = p.lastCareed;
     if (typeof p.id !== 'number') p.id = idx;
     // cleanup old keys (giữ animalId/raisedAt)
     delete p.plantId;
@@ -4137,7 +4139,9 @@ function migratePlayerSchema(player) {
     delete p.fertilizerId;
     delete p.fertId;
     delete p.feedActionrId;
-    delete p.feedActiondAt;
+    delete p.fertilizedAt;
+    delete p.lastCareed;
+    delete p.feedAt;
     return p;
   };
 
@@ -4293,7 +4297,7 @@ async function loadPlayer(uid, email) {
     if (!Array.isArray(currentPlayer.pens)) {
       const penCount = currentSettings.penCount || 12;
       currentPlayer.pens = Array(penCount).fill(null).map((_, i) => ({
-        id: i, animalId: null, raisedAt: null, watered: false, waterCount: 0, lastCareed: null, feedId: null
+        id: i, animalId: null, raisedAt: null, watered: false, waterCount: 0, lastWatered: null, feedId: null
       }));
     }
     if (!Array.isArray(currentPlayer.pens)) {

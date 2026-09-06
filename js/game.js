@@ -44,7 +44,10 @@ const Game = {
   getAnimal(id) {
     if (id == null || id === '') return null;
     const s = String(id);
-    return currentAnimals.find(p => p && (p.id === id || String(p.id) === s)) || null;
+    const list = (typeof currentAnimals !== 'undefined' && currentAnimals && currentAnimals.length)
+      ? currentAnimals
+      : (typeof DEFAULT_ANIMALS !== 'undefined' ? DEFAULT_ANIMALS : []);
+    return list.find(p => p && (p.id === id || String(p.id) === s)) || null;
   },
   getFeed(id) { return DEFAULT_FEEDS.find(f => f.id === id); },
   getFeeds() { return DEFAULT_FEEDS; },
@@ -116,7 +119,7 @@ const Game = {
       raisedAt: null,
       watered: false,
       waterCount: 0,
-      lastCareed: null,
+      lastWatered: null,
       feedId: null
     }));
   },
@@ -191,7 +194,7 @@ const Game = {
             }
             return {
               id: idx, animalId: null, raisedAt: null, watered: false,
-              waterCount: 0, lastCareed: null, feedId: null
+              waterCount: 0, lastWatered: null, feedId: null
             };
           });
         } else {
@@ -219,11 +222,11 @@ const Game = {
         if (p.raisedAt != null) {
           p.raisedAt = this.toMs(p.raisedAt);
         }
-        if (p.lastCareed != null) {
-          p.lastCareed = this.toMs(p.lastCareed);
+        if (p.lastWatered != null) {
+          p.lastWatered = this.toMs(p.lastWatered);
         }
-        if (p.feedActiondAt != null) {
-          p.feedActiondAt = this.toMs(p.feedActiondAt);
+        if (p.feedAt != null) {
+          p.feedAt = this.toMs(p.feedAt);
         }
         if (p.specialMult != null) p.specialMult = Number(p.specialMult) || 1;
         if (p.specialMultPermanent != null) p.specialMultPermanent = Number(p.specialMultPermanent) || 1;
@@ -676,7 +679,7 @@ const Game = {
           if (fairyHere) {
             pen.watered = true;
             pen.waterCount = 3;
-            pen.lastCareed = now;
+            pen.lastWatered = now;
             wateredN++;
           }
         });
@@ -792,9 +795,9 @@ const Game = {
           animalId: p.animalId || null,
           raisedAt: p.raisedAt || null,
           waterCount: p.waterCount || 0,
-          lastCareed: p.lastCareed || null,
+          lastWatered: p.lastWatered || null,
           feedId: p.feedId || null,
-          feedActiondAt: p.feedActiondAt || null
+          feedAt: p.feedAt || null
         }));
       await db.ref('publicFarms/' + currentUser.uid).set({
         uid: currentUser.uid,
@@ -863,7 +866,7 @@ const Game = {
         if (pen) {
           pen.waterCount = (pen.waterCount || 0) + 1;
           pen.watered = true;
-          pen.lastCareed = (typeof nowMs==="function"?nowMs():Date.now());
+          pen.lastWatered = (typeof nowMs==="function"?nowMs():Date.now());
           applied++;
           if (h.fromName) names.push(h.fromName);
         }
@@ -1249,9 +1252,9 @@ const Game = {
     pen.raisedAt = (typeof nowMs==="function"?nowMs():Date.now());
     pen.watered = false;
     pen.waterCount = 0;
-    pen.lastCareed = null;
+    pen.lastWatered = null;
     pen.feedId = null;
-    pen.feedActiondAt = null;
+    pen.feedAt = null;
     pen.animalStar = usedStar || usedMyth;
     pen.seedMyth = usedMyth;
     {
@@ -1263,14 +1266,14 @@ const Game = {
     if (this.isFairyActive() && (pen.waterCount || 0) < 3) {
       pen.waterCount = 3;
       pen.watered = true;
-      pen.lastCareed = (typeof nowMs==="function"?nowMs():Date.now());
+      pen.lastWatered = (typeof nowMs==="function"?nowMs():Date.now());
       fairyCareed = true;
       if (typeof Features !== 'undefined' && Features.trackQuest) Features.trackQuest('water', 3);
     }
     currentPlayer.stats.raised = (currentPlayer.stats.raised || 0) + 1;
     const animal = this.getAnimal(animalId);
     const _pTag = usedMyth ? '✨ ' : (usedStar ? '⭐ ' : '');
-    this.addActivity(`Nuôi ${_pTag}${animal.name} vào ô #${plotId + 1}` + (fairyCareed ? ' · Tiên chăm ngay' : ''));
+    this.addActivity(`Nuôi ${_pTag}${animal.name} vào chuồng #${plotId + 1}` + (fairyCareed ? ' · Tiên chăm ngay' : ''));
     if (typeof Features !== 'undefined') Features.trackQuest('animal', 1);
     if (typeof recordGameEvent === 'function') {
       recordGameEvent('animal', {
@@ -1286,7 +1289,7 @@ const Game = {
     const ach = this.checkAchievements();
     await savePlayer({ action: 'animal' });
     this.notifyAchievements(ach);
-    return { ok: true, msg: `Đã nuôi ${usedMyth ? '✨ ' : (usedStar ? '⭐ ' : '')}${animal.name}!` + (fairyCareed ? ' 🧚 Tiên đã tưới.' : '') };
+    return { ok: true, msg: `Đã nuôi ${usedMyth ? '✨ ' : (usedStar ? '⭐ ' : '')}${animal.name}!` + (fairyCareed ? ' 🧚 Tiên đã chăm.' : '') };
   },
 
   
@@ -1315,7 +1318,7 @@ const Game = {
     let fairyCareedN = 0;
     for (let i = 0; i < n; i++) {
       const penId = empty[i];
-      const pen = currentPlayer.pens[plotId];
+      const pen = currentPlayer.pens[penId];
       if (!pen || pen.animalId) break;
       let usedStar = false;
       let usedMyth = false;
@@ -1359,9 +1362,9 @@ const Game = {
       pen.raisedAt = at; 
       pen.watered = false;
       pen.waterCount = 0;
-      pen.lastCareed = null;
+      pen.lastWatered = null;
       pen.feedId = null;
-      pen.feedActiondAt = null;
+      pen.feedAt = null;
       pen.animalStar = usedStar || usedMyth;
       pen.seedMyth = usedMyth;
       {
@@ -1371,7 +1374,7 @@ const Game = {
       if (fairyOn) {
         pen.waterCount = 3;
         pen.watered = true;
-        pen.lastCareed = at;
+        pen.lastWatered = at;
         fairyCareedN++;
       }
       raisedCount++;
@@ -1382,26 +1385,26 @@ const Game = {
         Features.trackQuest('animal', raisedCount);
         if (fairyCareedN > 0) Features.trackQuest('water', fairyCareedN * 3);
       }
-      this.addActivity(`Nuôi ${raisedCount} ô ${animal.name}` + (fairyCareedN ? ` · Tiên chăm ${fairyCareedN} ô` : '') + ' (đồng bộ giờ)');
+      this.addActivity(`Nuôi ${raisedCount} chuồng ${animal.name}` + (fairyCareedN ? ` · Tiên chăm ${fairyCareedN} ô` : '') + ' (đồng bộ giờ)');
       const ach = this.checkAchievements();
       await savePlayer();
       this.notifyAchievements(ach);
     }
-    return { ok: raisedCount > 0, msg: raisedCount > 0 ? `Đã nuôi ${raisedCount} ô (cùng giờ)!` : 'Không nuôi được.' };
+    return { ok: raisedCount > 0, msg: raisedCount > 0 ? `Đã nuôi ${raisedCount} chuồng (cùng giờ)!` : 'Không nuôi được.' };
   },
 
   async waterPen(plotId) {
     if (!currentPlayer) return { ok: false, msg: 'Chưa đăng nhập!' };
     const pen = currentPlayer.pens[plotId];
-    if (!pen || !pen.animalId) return { ok: false, msg: 'Không có con để tưới!' };
-    if (this.isReady(pen)) return { ok: false, msg: 'Con đã chín rồi!' };
+    if (!pen || !pen.animalId) return { ok: false, msg: 'Không có con để chăm!' };
+    if (this.isReady(pen)) return { ok: false, msg: 'Đã sẵn sàng thu hoạch!' };
     const count = pen.waterCount || 0;
     if (count >= 3) return { ok: false, msg: 'Đã chăm tối đa 3 lần!' };
     
     pen.watered = true;
     pen.waterCount = count + 1;
-    pen.lastCareed = (typeof nowMs==="function"?nowMs():Date.now());
-    this.addActivity(`Chăm sóc ô #${plotId + 1} (${pen.waterCount}/3)`);
+    pen.lastWatered = (typeof nowMs==="function"?nowMs():Date.now());
+    this.addActivity(`Chăm sóc chuồng #${plotId + 1} (${pen.waterCount}/3)`);
     if (typeof Features !== 'undefined') Features.trackQuest('water', 1);
     if (typeof recordGameEvent === 'function') {
       recordGameEvent('water', {
@@ -1409,7 +1412,7 @@ const Game = {
         farmIndex: currentPlayer.activeFarm || 0,
         animalId: pen.animalId,
         waterCount: pen.waterCount,
-        at: pen.lastCareed
+        at: pen.lastWatered
       });
     }
     await savePlayer({ action: 'water' });
@@ -1421,7 +1424,7 @@ const Game = {
     if (!currentPlayer) return { ok: false, msg: 'Chưa đăng nhập!' };
     const pen = currentPlayer.pens[plotId];
     if (!pen || !pen.animalId) return { ok: false, msg: 'Không có con!' };
-    if (this.isReady(pen)) return { ok: false, msg: 'Con đã chín rồi!' };
+    if (this.isReady(pen)) return { ok: false, msg: 'Đã sẵn sàng thu hoạch!' };
     if (pen.feedId) return { ok: false, msg: 'Ô này đã cho ăn cám rồi!' };
     const have = (currentPlayer.inventory.feeds && currentPlayer.inventory.feeds[fertId]) || 0;
     if (have < 1) return { ok: false, msg: 'Không đủ cám bón!' };
@@ -1430,15 +1433,15 @@ const Game = {
     currentPlayer.inventory.feeds[fertId]--;
     if (currentPlayer.inventory.feeds[fertId] <= 0) delete currentPlayer.inventory.feeds[fertId];
     pen.feedId = fertId;
-    pen.feedActiondAt = (typeof nowMs==="function"?nowMs():Date.now());
-    this.addActivity(`Cho ăn ${fert.name} ô #${plotId + 1}`);
+    pen.feedAt = (typeof nowMs==="function"?nowMs():Date.now());
+    this.addActivity(`Cho ăn ${fert.name} chuồng #${plotId + 1}`);
     if (typeof recordGameEvent === 'function') {
       recordGameEvent('fert', {
         penId,
         farmIndex: currentPlayer.activeFarm || 0,
         animalId: pen.animalId,
         fertId,
-        at: pen.feedActiondAt
+        at: pen.feedAt
       });
     }
     await savePlayer({ action: 'fert' });
@@ -1457,7 +1460,7 @@ const Game = {
         while ((pen.waterCount || 0) < 3) {
           pen.watered = true;
           pen.waterCount = (pen.waterCount || 0) + 1;
-          pen.lastCareed = (typeof nowMs==="function"?nowMs():Date.now());
+          pen.lastWatered = (typeof nowMs==="function"?nowMs():Date.now());
           actions++;
         }
         pensDone++;
@@ -1473,7 +1476,7 @@ const Game = {
   },
 
   
-  async feedActionAll(limit, fertId) {
+  async feedAllPens(limit, fertId) {
     if (!currentPlayer) return { ok: false, msg: 'Chưa đăng nhập!' };
     if (!currentPlayer.inventory) currentPlayer.inventory = {};
     if (!currentPlayer.inventory.feeds) currentPlayer.inventory.feeds = {};
@@ -1498,7 +1501,7 @@ const Game = {
       stock[fert.id]--;
       if (stock[fert.id] <= 0) delete stock[fert.id];
       pen.feedId = fert.id;
-      pen.feedActiondAt = (typeof nowMs==="function"?nowMs():Date.now());
+      pen.feedAt = (typeof nowMs==="function"?nowMs():Date.now());
       count++;
     }
     if (count > 0) {
@@ -1515,14 +1518,14 @@ const Game = {
 
   
   getCareBoostRemainingMs(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
-    if (!pen || !(pen.waterCount > 0) || !pen.lastCareed) return 0;
-    return Math.max(0, (pen.lastCareed + this.BOOST_MS) - now);
+    if (!pen || !(pen.waterCount > 0) || !pen.lastWatered) return 0;
+    return Math.max(0, (pen.lastWatered + this.BOOST_MS) - now);
   },
 
   
   getFertBoostRemainingMs(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
-    if (!pen || !pen.feedId || !pen.feedActiondAt) return 0;
-    return Math.max(0, (pen.feedActiondAt + this.BOOST_MS) - now);
+    if (!pen || !pen.feedId || !pen.feedAt) return 0;
+    return Math.max(0, (pen.feedAt + this.BOOST_MS) - now);
   },
 
   
@@ -1856,7 +1859,7 @@ const Game = {
       const pen = needCare[i];
       pen.waterCount = 3;
       pen.watered = true;
-      pen.lastCareed = now;
+      pen.lastWatered = now;
       wateredN++;
     }
 
@@ -1877,7 +1880,7 @@ const Game = {
         const pen = needFert[i];
         if (pen.feedId) {
           pen.feedId = null;
-          pen.feedActiondAt = null;
+          pen.feedAt = null;
         }
         const fertId = this.takeFertFromBagForFairy(cfg);
         if (!fertId) {
@@ -1885,7 +1888,7 @@ const Game = {
           break; 
         }
         pen.feedId = fertId;
-        pen.feedActiondAt = now; 
+        pen.feedAt = now; 
         fertN++;
       }
     }
@@ -1941,11 +1944,11 @@ const Game = {
       const count = pen.waterCount || 0;
       const expired = !this.isCareBoostActive(pen, now);
       const missing = count < 3;
-      const never = count <= 0 || !pen.lastCareed;
+      const never = count <= 0 || !pen.lastWatered;
       if (!expired && !missing && !never) return;
       pen.waterCount = 3;
       pen.watered = true;
-      pen.lastCareed = now;
+      pen.lastWatered = now;
       n++;
     });
     if (n > 0 && typeof Features !== 'undefined' && Features.trackQuest) {
@@ -1976,12 +1979,12 @@ const Game = {
       
       if (pen.feedId) {
         pen.feedId = null;
-        pen.feedActiondAt = null;
+        pen.feedAt = null;
       }
       const fertId = this.takeFertFromBagForFairy(cfg);
       if (!fertId) return; 
       pen.feedId = fertId;
-      pen.feedActiondAt = now;
+      pen.feedAt = now;
       n++;
     });
     return n > 0;
@@ -2009,22 +2012,22 @@ const Game = {
       } else {
         pens.forEach(pen => {
           if (!pen) return;
-          if ((pen.waterCount || 0) > 0 && pen.lastCareed && !this.isCareBoostActive(pen, now)) {
+          if ((pen.waterCount || 0) > 0 && pen.lastWatered && !this.isCareBoostActive(pen, now)) {
             pen.waterCount = 0;
             pen.watered = false;
-            pen.lastCareed = null;
+            pen.lastWatered = null;
             changed = true;
           }
-          if (pen.feedId && pen.feedActiondAt && !this.isFertBoostActive(pen, now)) {
+          if (pen.feedId && pen.feedAt && !this.isFertBoostActive(pen, now)) {
             pen.feedId = null;
-            pen.feedActiondAt = null;
+            pen.feedAt = null;
             changed = true;
           }
         });
       }
       pens.forEach(pen => {
-        if (pen && pen.feedId && !pen.feedActiondAt) {
-          pen.feedActiondAt = now;
+        if (pen && pen.feedId && !pen.feedAt) {
+          pen.feedAt = now;
           changed = true;
         }
       });
@@ -2124,7 +2127,7 @@ const Game = {
         if (fairyHere) {
           pen.waterCount = 3;
           pen.watered = true;
-          pen.lastCareed = t;
+          pen.lastWatered = t;
           watered++;
         }
       });
@@ -2193,9 +2196,9 @@ const Game = {
     pen.raisedAt = null;
     pen.watered = false;
     pen.waterCount = 0;
-    pen.lastCareed = null;
+    pen.lastWatered = null;
     pen.feedId = null;
-    pen.feedActiondAt = null;
+    pen.feedAt = null;
     pen.animalStar = false;
     pen.seedMyth = false;
     let raisedCount = 0;
@@ -2437,7 +2440,7 @@ const Game = {
           if (!pen || !pen.animalId) return;
           pen.waterCount = 3;
           pen.watered = true;
-          pen.lastCareed = from;
+          pen.lastWatered = from;
         });
         
         const fcfg = this.getFairyConfigForFarm
@@ -2451,7 +2454,7 @@ const Game = {
             const fid = this.takeFertFromBagForFairy(fcfg);
             if (!fid) return;
             pen.feedId = fid;
-            pen.feedActiondAt = from;
+            pen.feedAt = from;
           });
         }
       });
@@ -2552,7 +2555,7 @@ const Game = {
           if ((pen.waterCount || 0) < 3) {
             pen.waterCount = 3;
             pen.watered = true;
-            if (!pen.lastCareed) pen.lastCareed = t;
+            if (!pen.lastWatered) pen.lastWatered = t;
           }
           if (!(Number(pen.baseRaiseTime) > 0)) {
             const anDef = this.getAnimal(pen.animalId);
@@ -2574,7 +2577,7 @@ const Game = {
             if (pen.animalId) {
               pen.waterCount = 3;
               pen.watered = true;
-              pen.lastCareed = t;
+              pen.lastWatered = t;
               if (perm >= 2) pen.specialMult = Math.max(Number(pen.specialMult) || 1, perm);
             }
           }
@@ -2601,7 +2604,7 @@ const Game = {
               if (p && p.animalId && (p.waterCount || 0) < 3) {
                 p.waterCount = 3;
                 p.watered = true;
-                p.lastCareed = t;
+                p.lastWatered = t;
               }
             });
           }
@@ -2684,7 +2687,7 @@ const Game = {
           if (p.animalId) {
             p.waterCount = 3;
             p.watered = true;
-            if (!p.lastCareed) p.lastCareed = from;
+            if (!p.lastWatered) p.lastWatered = from;
             if (!(Number(p.baseRaiseTime) > 0)) {
               try {
                 const anDef = this.getAnimal(p.animalId);
@@ -2891,7 +2894,7 @@ const Game = {
                     pen.raisedAt = harvestT;
                     pen.waterCount = 3;
                     pen.watered = true;
-                    pen.lastCareed = harvestT;
+                    pen.lastWatered = harvestT;
                   }
                 }
               }
@@ -3267,14 +3270,14 @@ const Game = {
       : (Number(pen.baseRaiseTime) > 0 ? Number(pen.baseRaiseTime) : 0);
     pen.waterCount = 0;
     pen.watered = false;
-    pen.lastCareed = null;
+    pen.lastWatered = null;
     pen.feedId = null;
-    pen.feedActiondAt = null;
+    pen.feedAt = null;
     
     if (typeof gi === 'number' && this.isFairyActiveAt(raiseTimeMs) && this.isFairyFarmEnabled(gi)) {
       pen.waterCount = 3;
       pen.watered = true;
-      pen.lastCareed = raiseTimeMs;
+      pen.lastWatered = raiseTimeMs;
       const fcfg = this.getFairyConfigForFarm
         ? this.getFairyConfigForFarm(gi)
         : this.getFairyConfig();
@@ -3282,7 +3285,7 @@ const Game = {
         const fid = this.takeFertFromBagForFairy(fcfg);
         if (fid) {
           pen.feedId = fid;
-          pen.feedActiondAt = raiseTimeMs;
+          pen.feedAt = raiseTimeMs;
         }
       }
     }
@@ -3659,9 +3662,9 @@ const Game = {
       pen.raisedAt = null;
       pen.watered = false;
       pen.waterCount = 0;
-      pen.lastCareed = null;
+      pen.lastWatered = null;
       pen.feedId = null;
-      pen.feedActiondAt = null;
+      pen.feedAt = null;
       pen.animalStar = false;
       pen.seedMyth = false;
       harvested++;
@@ -4122,9 +4125,9 @@ const Game = {
     pen.raisedAt = null;
     pen.watered = false;
     pen.waterCount = 0;
-    pen.lastCareed = null;
+    pen.lastWatered = null;
     pen.feedId = null;
-    pen.feedActiondAt = null;
+    pen.feedAt = null;
     pen.animalStar = false;
     pen.seedMyth = false;
     this.addActivity(`Thu hoạch ${amount} ${animal.name}${_htag} (+${xpGain} XP)` + (newCol ? ' · Album +1' : ''));
@@ -4168,9 +4171,9 @@ const Game = {
         pen.raisedAt = null;
         pen.watered = false;
         pen.waterCount = 0;
-        pen.lastCareed = null;
+        pen.lastWatered = null;
         pen.feedId = null;
-        pen.feedActiondAt = null;
+        pen.feedAt = null;
         pen.animalStar = false;
     pen.seedMyth = false;
         pensDone++;
@@ -4195,12 +4198,12 @@ const Game = {
     pen.raisedAt = null;
     pen.watered = false;
     pen.waterCount = 0;
-    pen.lastCareed = null;
+    pen.lastWatered = null;
     pen.feedId = null;
-    pen.feedActiondAt = null;
+    pen.feedAt = null;
     pen.animalStar = false;
     pen.seedMyth = false;
-    this.addActivity(`Nhổ bỏ ${animal ? animal.name : 'con'}`);
+    this.addActivity(`Bán / thả ${animal ? animal.name : 'con'}`);
     await savePlayer();
     return { ok: true, msg: `Đã nhổ bỏ ${animal ? animal.name : 'con'}.` };
   },
@@ -4532,7 +4535,7 @@ const Game = {
         raisedAt: null,
         watered: false,
         waterCount: 0,
-        lastCareed: null,
+        lastWatered: null,
         feedId: null
       });
     }
