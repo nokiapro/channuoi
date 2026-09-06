@@ -1538,13 +1538,17 @@ const Game = {
   
   getCareBoostRemainingMs(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
     if (!pen || !(pen.waterCount > 0) || !pen.lastWatered) return 0;
-    return Math.max(0, (pen.lastWatered + this.BOOST_MS) - now);
+    const lw = this.toMs(pen.lastWatered);
+    if (!Number.isFinite(lw) || lw <= 0) return 0;
+    return Math.max(0, (lw + this.BOOST_MS) - now);
   },
 
   
   getFertBoostRemainingMs(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
     if (!pen || !pen.feedId || !pen.feedAt) return 0;
-    return Math.max(0, (pen.feedAt + this.BOOST_MS) - now);
+    const fa = this.toMs(pen.feedAt);
+    if (!Number.isFinite(fa) || fa <= 0) return 0;
+    return Math.max(0, (fa + this.BOOST_MS) - now);
   },
 
   
@@ -1595,7 +1599,7 @@ const Game = {
         active: false,
         nearExpiry: rem > 0 && rem <= this.BOOST_PREVIEW_MS,
         remainingMs: rem,
-        text: 'Chưa cho ăn phân',
+        text: 'Chưa cho ăn cám',
         fertId: null
       };
     }
@@ -1964,7 +1968,7 @@ const Game = {
             : ' (hết cám trong kho)';
         }
       } else {
-        msg += ' (không cho ăn phân)';
+        msg += ' (không dùng cám)';
       }
       this.addActivity(msg, { type: 'fairy_care', at: now });
       
@@ -2011,30 +2015,27 @@ const Game = {
 
 
 
+  /**
+   * Không trừ kho cám ở đây (tránh trừ mỗi giây khi tick).
+   * Chỉ sửa timestamp nếu ô đã có feedId nhưng feedAt lỗi / mất hiệu lực hiển thị.
+   * Việc trừ cám chỉ xảy ra trong runFairyCare (chu kỳ ~3h).
+   */
   fairyEnsureFed(now = (typeof nowMs==="function"?nowMs():Date.now())) {
     if (!this.isFairyActive() || !currentPlayer || !currentPlayer.pens) return false;
-    const cfg = this.getFairyConfig();
-    if (!cfg.useFeed) return false;
     const pens = Array.isArray(currentPlayer.pens)
       ? currentPlayer.pens
       : Object.values(currentPlayer.pens || {});
     if (!Array.isArray(currentPlayer.pens)) currentPlayer.pens = pens;
     let n = 0;
     pens.forEach(pen => {
-      if (!pen || !pen.animalId) return;
+      if (!pen || !pen.animalId || !pen.feedId) return;
       if (this.isReady(pen)) return;
-      const active = this.isFertBoostActive(pen, now);
-      if (active) return;
-      
-      if (pen.feedId) {
-        pen.feedId = null;
-        pen.feedAt = null;
+      // Có feedId nhưng feedAt không hợp lệ → gán lại now (KHÔNG trừ kho)
+      const fa = this.toMs(pen.feedAt);
+      if (!Number.isFinite(fa) || fa <= 0) {
+        pen.feedAt = now;
+        n++;
       }
-      const fertId = this.takeFertFromBagForFairy(cfg);
-      if (!fertId) return; 
-      pen.feedId = fertId;
-      pen.feedAt = now;
-      n++;
     });
     return n > 0;
   },
@@ -2056,8 +2057,8 @@ const Game = {
     this.forEachFarm((pens, gi) => {
       const fairyHere = fairy && this.isFairyFarmEnabled(gi);
       if (fairyHere) {
+        // Chỉ duy trì tưới (miễn phí). Cám chỉ trừ trong runFairyCare (chu kỳ BOOST_MS) — tránh trừ mỗi giây
         if (this.fairyEnsureCareed(now)) changed = true;
-        if (this.fairyEnsureFed(now)) changed = true;
       } else {
         pens.forEach(pen => {
           if (!pen) return;
