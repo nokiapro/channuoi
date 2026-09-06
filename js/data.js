@@ -4141,7 +4141,7 @@ function migratePlayerSchema(player) {
     delete p.feedActionrId;
     delete p.fertilizedAt;
     delete p.lastCareed;
-    delete p.feedAt;
+    // KHÔNG xóa feedAt / feedId — đây là trạng thái đang cho ăn cám
     return p;
   };
 

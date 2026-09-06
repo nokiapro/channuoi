@@ -2727,6 +2727,9 @@ function openFertModal(plotId) {
         closeModals();
         renderFarm();
         updateCoins();
+        if (res.ok && typeof openPenModal === 'function') {
+          try { openPenModal(plotId); } catch (_) {}
+        }
       });
       list.appendChild(opt);
     });
