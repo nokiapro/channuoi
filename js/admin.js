@@ -26,7 +26,7 @@ auth.onAuthStateChanged(async (user) => {
 
     if (!isAdmin) {
       status.textContent = '⛔ Bạn không có quyền Admin.';
-      status.innerHTML += '<br><br><a href="../" class="back-link">← Quay lại vườn</a>';
+      status.innerHTML += '<br><br><a href="../" class="back-link">← Quay lại trại</a>';
       return;
     }
 
@@ -105,7 +105,7 @@ async function renderDashboard() {
   });
 
   document.getElementById('admin-stats').innerHTML = `
-    <div class="admin-stat"><div class="value">${currentAnimals.length}</div><div class="label">Loại cây</div></div>
+    <div class="admin-stat"><div class="value">${currentAnimals.length}</div><div class="label">Loại động vật</div></div>
     <div class="admin-stat"><div class="value">${userList.length}</div><div class="label">Người chơi</div></div>
     <div class="admin-stat"><div class="value">${totalCoins.toLocaleString()}</div><div class="label">Tổng tiền</div></div>
     <div class="admin-stat"><div class="value">${totalAnimaled}</div><div class="label">Đã nuôi</div></div>
@@ -129,7 +129,7 @@ function renderActivityPage() {
   function adminActIcon(text) {
     const s = String(text || '');
     if (s.indexOf('Thu hoạch') >= 0) return 'fa-solid fa-basket-shopping';
-    if (s.indexOf('Trồng') >= 0) return 'fa-solid fa-youngling';
+    if (s.indexOf('Nuôi') >= 0) return 'fa-solid fa-paw';
     if (s.indexOf('Tưới') >= 0 || s.indexOf('tưới') >= 0) return 'fa-solid fa-droplet';
     if (s.indexOf('Bón') >= 0 || s.indexOf('phân') >= 0) return 'fa-solid fa-flask';
     if (s.indexOf('Tiên') >= 0) return 'fa-solid fa-wand-magic-sparkles';
@@ -223,7 +223,7 @@ function renderAnimalsTable() {
 
   if (!pager) return;
   if (all.length <= pageSize) {
-    pager.innerHTML = all.length ? `<span>${all.length} loại cây</span>` : '';
+    pager.innerHTML = all.length ? `<span>${all.length} loại động vật</span>` : '';
     return;
   }
   pager.classList.add('ux-pager', 'admin-pager');
@@ -258,7 +258,7 @@ function openAnimalForm(id) {
   if (id) {
     const animal = currentAnimals.find(p => p.id === id);
     if (!animal) return;
-    document.getElementById('form-title').textContent = 'Sửa cây: ' + animal.name;
+    document.getElementById('form-title').textContent = 'Sửa động vật: ' + animal.name;
     document.getElementById('animal-id').value = animal.id;
     document.getElementById('p-icon').value = animal.icon;
     document.getElementById('p-name').value = animal.name;
@@ -308,7 +308,7 @@ document.getElementById('animal-form').addEventListener('submit', async (e) => {
 
   await saveAnimals();
   document.getElementById('modal-animal-form').classList.remove('show');
-  showToast(id ? 'Đã cập nhật cây!' : 'Đã thêm con mới!', 'success');
+  showToast(id ? 'Đã cập nhật con!' : 'Đã thêm con mới!', 'success');
   renderAnimalsTable();
 });
 
@@ -316,7 +316,7 @@ async function deleteAnimal(id) {
   if (!confirm('Xóa con này?')) return;
   currentAnimals = currentAnimals.filter(p => p.id !== id);
   await saveAnimals();
-  showToast('Đã xóa cây!', 'success');
+  showToast('Đã xóa con!', 'success');
   renderAnimalsTable();
 }
 
@@ -421,7 +421,7 @@ async function renderUsers() {
           for (let i = 0; i < n; i++) {
             u.pens.push({
               id: u.pens.length, animalId: null, raisedAt: null,
-              watered: false, waterCount: 0, lastWatered: null,
+              watered: false, waterCount: 0, lastCareed: null,
               feedId: null, feedActiondAt: null
             });
           }
@@ -460,7 +460,7 @@ async function renderUsers() {
           for (let i = 0; i < n; i++) {
             u.pens.push({
               id: u.pens.length, animalId: null, raisedAt: null,
-              watered: false, waterCount: 0, lastWatered: null,
+              watered: false, waterCount: 0, lastCareed: null,
               feedId: null, feedActiondAt: null,
               specialMult: mult,
               specialId: 'admin-boost-' + mult,
@@ -525,7 +525,7 @@ async function renderUsers() {
       const snap = await db.ref('users/' + uid + '/unlimitedResources').once('value');
       const next = !snap.val();
       const msg = next
-        ? 'Bật UNLIMITED tài nguyên cho user này? (xu/hạt/phân/bùa không bị trừ)'
+        ? 'Bật UNLIMITED tài nguyên cho user này? (xu/giống/cám/bùa không bị trừ)'
         : 'Tắt unlimited cho user này?';
       if (!confirm(msg)) return;
       await db.ref('users/' + uid).update({ unlimitedResources: next, updatedAt: Date.now() });
@@ -821,7 +821,7 @@ document.getElementById('btn-reset-animals').addEventListener('click', async () 
   if (!confirm('Reset danh sách con về mặc định?')) return;
   currentAnimals = JSON.parse(JSON.stringify(DEFAULT_ANIMALS));
   await saveAnimals();
-  showToast('Đã reset danh sách cây!', 'success');
+  showToast('Đã reset danh sách con!', 'success');
 });
 
 
@@ -898,11 +898,11 @@ document.getElementById('btn-reset-animals').addEventListener('click', async () 
   if (_open) {
     window.openAnimalForm = function () {
       _open.apply(this, arguments);
-      setTimeout(() => mount(document.getElementById('p-type'), 'Loại cây: '), 0);
+      setTimeout(() => mount(document.getElementById('p-type'), 'Loại động vật: '), 0);
     };
   }
   document.addEventListener('DOMContentLoaded', () => {
-    mount(document.getElementById('p-type'), 'Loại cây: ');
+    mount(document.getElementById('p-type'), 'Loại động vật: ');
   });
 })();
 

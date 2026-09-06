@@ -1,4 +1,4 @@
-/* Vườn Xanh PWA service worker */
+/* Trại Xanh PWA service worker */
 const CACHE_VERSION = 'vuon-xanh-v1.9.123';
 const PRECACHE = [
   './',

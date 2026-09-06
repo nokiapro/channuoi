@@ -18,7 +18,7 @@
     <div class="login-card">
       <h1>🔐 Admin Panel</h1>
       <p id="admin-status">Đang kiểm tra quyền...</p>
-      <a href="../" class="back-link">← Quay lại vườn</a>
+      <a href="../" class="back-link">← Quay lại trại</a>
     </div>
   </div>
 
@@ -32,14 +32,14 @@
       </div>
       <nav class="sidebar-nav">
         <button class="side-btn active" data-section="dashboard"><i class="fa-solid fa-chart-pie"></i> Tổng quan</button>
-        <button class="side-btn" data-section="animals"><i class="fa-solid fa-youngling"></i> Quản lý cây</button>
+        <button class="side-btn" data-section="animals"><i class="fa-solid fa-paw"></i> Quản lý động vật</button>
         <button class="side-btn" data-section="users"><i class="fa-solid fa-users"></i> Người chơi</button>
         <button class="side-btn" data-section="giftcodes"><i class="fa-solid fa-ticket"></i> Gift code</button>
         <button class="side-btn" data-section="settings"><i class="fa-solid fa-gear"></i> Cài đặt</button>
         <button class="side-btn" data-section="announce"><i class="fa-solid fa-envelope"></i> Thư / Thông báo</button>
         <button class="side-btn" data-section="reset"><i class="fa-solid fa-rotate"></i> Reset dữ liệu</button>
       </nav>
-      <a href="../" class="btn-logout" style="text-align:center;text-decoration:none;display:block"><i class="fa-solid fa-arrow-left"></i> Về vườn</a>
+      <a href="../" class="btn-logout" style="text-align:center;text-decoration:none;display:block"><i class="fa-solid fa-arrow-left"></i> Về trại</a>
     </aside>
 
     <main class="admin-main">
@@ -60,7 +60,7 @@
 
       <section id="sec-animals" class="admin-section">
         <div class="section-header">
-          <h1>🌿 QUẢN LÝ CÂY / HOA / QUẢ</h1>
+          <h1>🐄 QUẢN LÝ ĐỘNG VẬT</h1>
           <button id="btn-add-animal" class="btn btn-primary">+ Thêm con mới</button>
         </div>
         <div class="shop-toolbar" style="margin-bottom:12px">
@@ -73,7 +73,7 @@
                 <th>Icon</th>
                 <th>Tên</th>
                 <th>Loại</th>
-                <th>Giá hạt</th>
+                <th>Giá mua</th>
                 <th>Thời gian (s)</th>
                 <th>Sản lượng</th>
                 <th>Giá bán</th>
@@ -97,7 +97,7 @@
             <input type="checkbox" id="user-filter-unlimited" />
             <span>Chỉ hiện user <strong>unlimited tài nguyên</strong></span>
           </label>
-          <p style="font-size:0.85rem;color:#52796f;margin:8px 0 0">Nút <strong>∞ Unlimited</strong> trên từng user: bật/tắt dùng không giới hạn xu, hạt, phân, bùa…</p>
+          <p style="font-size:0.85rem;color:#52796f;margin:8px 0 0">Nút <strong>∞ Unlimited</strong> trên từng user: bật/tắt dùng không giới hạn xu, giống, cám, bùa…</p>
         </div>
 <table class="admin-table" id="users-table">
             <thead>
@@ -178,7 +178,7 @@
           <input type="number" id="set-coins" min="0" />
           <label>Thời lượng mưa liên tục (phút)</label>
           <input type="number" id="set-rain-duration" min="0.1" max="120" step="0.05" />
-          <p style="font-size:0.85rem;color:#52796f;margin-top:4px">Mưa cố định mỗi <strong>30 phút</strong> (không còn tỉ lệ %). Ví dụ thời lượng: 0.25 = 15 giây, 1 = 1 phút. Mưa rút ngắn ~12% thời gian còn lại của con đang lớn. Tiên (nếu bật) tưới hết khi mưa.</p>
+          <p style="font-size:0.85rem;color:#52796f;margin-top:4px">Mưa cố định mỗi <strong>30 phút</strong> (không còn tỉ lệ %). Ví dụ thời lượng: 0.25 = 15 giây, 1 = 1 phút. Mưa rút ngắn ~12% thời gian còn lại của con đang lớn. Tiên (nếu bật) chăm hết khi mưa.</p>
           <label>Tỉ lệ ghép con cơ bản % (không dùng bùa, 1–100)</label>
           <input type="number" id="set-merge-base" min="1" max="100" step="1" />
           <p style="font-size:0.85rem;color:#52796f;margin-top:4px">Mặc định 25%. Bùa bảo hộ <strong>cộng thêm</strong> (vd +10% → 35%). Kết quả luôn trong khoảng 1–100%.</p>
@@ -221,7 +221,7 @@
             · Đã công bố trên server: <strong id="set-published-version">—</strong>
           </p>
           <label>Ghi chú bản cập nhật (hiện cho user)</label>
-          <textarea id="set-update-notes" rows="2" placeholder="Ví dụ: Sửa Tiên tưới không giới hạn, thêm mưa theo phút…"></textarea>
+          <textarea id="set-update-notes" rows="2" placeholder="Ví dụ: Sửa Tiên chăm không giới hạn, thêm mưa theo phút…"></textarea>
           <label class="maint-toggle" style="margin-top:8px">
             <input type="checkbox" id="set-force-update" />
             <span>Bắt buộc tải lại (không cho đóng thông báo)</span>
@@ -278,7 +278,7 @@
         <h1>🔄 RESET DỮ LIỆU</h1>
         <div class="admin-card danger-zone">
           <p>⚠️ Reset danh sách con về mặc định (không xóa user).</p>
-          <button id="btn-reset-animals" class="btn btn-danger">Reset danh sách cây</button>
+          <button id="btn-reset-animals" class="btn btn-danger">Reset danh sách động vật</button>
         </div>
       </section>
     </main>
@@ -292,17 +292,15 @@
         <input type="hidden" id="animal-id" />
         <label>Icon (emoji / text, tối đa 10 ký tự)</label>
         <input type="text" id="p-icon" maxlength="10" required placeholder="🌹" title="Tối đa 10 ký tự (emoji / text)" />
-        <label>Tên cây</label>
+        <label>Tên động vật</label>
         <input type="text" id="p-name" required placeholder="Hoa hồng" />
         <label>Loại</label>
         <select id="p-type">
-          <option value="hoa">Hoa</option>
-          <option value="qua">Quả</option>
-          <option value="rau">Rau</option>
-          <option value="cay">Con cảnh</option>
-          <option value="la">Lá</option>
-          <option value="kytu">Ký tự</option>
-          <option value="so">Số</option>
+          <option value="gia-cam">Gia cầm</option>
+          <option value="nho">Nhỏ</option>
+          <option value="gia-suc">Gia súc</option>
+          <option value="lon">Lớn</option>
+          <option value="dac-biet">Đặc biệt</option>
           <option value="khac">Khác</option>
         </select>
         <label>Giá động vật</label>

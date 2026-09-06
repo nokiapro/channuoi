@@ -379,7 +379,7 @@ function renderAgentFarmToggles(hostId, farmsEnabled, kind) {
     const on = !(ge[i] === false || ge[String(i)] === false);
     const pens = (currentPlayer && currentPlayer.farms && currentPlayer.farms[i]) || [];
     const count = pens.length || 0;
-    const maxP = Game.MAX_PLOTS_PER_GARDEN || 99;
+    const maxP = Game.MAX_PENS_PER_FARM || 99;
     html += `<button type="button" class="agent-farm-tab ${i === sel ? 'active' : ''} ${on ? '' : 'off'}" data-farm="${i}" data-kind="${k}">
       Trại ${i + 1}<small>${count}/${maxP}</small>${on ? '' : ' · tắt'}
     </button>`;
@@ -399,7 +399,7 @@ function renderAgentFarmToggles(hostId, farmsEnabled, kind) {
       </label>`;
     }
   } else {
-    html += '<p class="bulk-hint">Chưa có vườn.</p>';
+    html += '<p class="bulk-hint">Chưa có trại.</p>';
   }
   host.innerHTML = html;
   host.querySelectorAll('.agent-farm-tab').forEach(btn => {
@@ -906,17 +906,17 @@ async function openVisitFarm(friendUid, friendName) {
   if (!modal || !grid || !currentUser) return;
 
   title.textContent = `Trại của ${friendName || 'bạn'}`;
-  grid.innerHTML = '<p class="empty-state">Đang tải vườn...</p>';
+  grid.innerHTML = '<p class="empty-state">Đang tải trại...</p>';
   if (meta) meta.textContent = '';
   modal.classList.add('show');
   helpBtn.dataset.uid = friendUid;
   helpBtn.dataset.name = friendName || '';
   const today = (typeof gameDateString === 'function') ? gameDateString() : new Date().toDateString();
-  const already = currentPlayer && currentPlayer.helpWaterLog && currentPlayer.helpWaterLog[friendUid] === today;
+  const already = currentPlayer && currentPlayer.helpCareLog && currentPlayer.helpCareLog[friendUid] === today;
   helpBtn.disabled = !!already;
   helpBtn.innerHTML = already
-    ? '<i class="fa-solid fa-check"></i> Đã tưới giúp hôm nay'
-    : '<i class="fa-solid fa-droplet"></i> Tưới giúp (+coin)';
+    ? '<i class="fa-solid fa-check"></i> Đã chăm giúp hôm nay'
+    : '<i class="fa-solid fa-droplet"></i> Chăm giúp (+coin)';
 
   try {
     const snap = await db.ref('publicFarms/' + friendUid).once('value');
@@ -962,7 +962,7 @@ async function openVisitFarm(friendUid, friendName) {
     });
   } catch (e) {
     console.error(e);
-    grid.innerHTML = `<p class="empty-state">Không đọc được vườn.<br>Hãy cập nhật Firebase Rules (publicFarms).<br><small>${escapeHtml(e.message || '')}</small></p>`;
+    grid.innerHTML = `<p class="empty-state">Không đọc được trại.<br>Hãy cập nhật Firebase Rules (publicFarms).<br><small>${escapeHtml(e.message || '')}</small></p>`;
   }
 }
 
@@ -971,10 +971,10 @@ document.getElementById('btn-help-water')?.addEventListener('click', async () =>
   const uid = btn && btn.dataset.uid;
   if (!uid) return;
   btn.disabled = true;
-  const res = await Game.helpWaterFriend(uid);
+  const res = await Game.helpCareFriend(uid);
   showToast(res.msg, res.ok ? 'success' : 'error');
   if (res.ok) {
-    btn.innerHTML = '<i class="fa-solid fa-check"></i> Đã tưới giúp hôm nay';
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chăm giúp hôm nay';
   } else {
     btn.disabled = false;
   }
@@ -1417,8 +1417,8 @@ document.getElementById('btn-reset-all-data')?.addEventListener('click', async (
   }
   const isAdm = (currentPlayer.role === 'admin') || (typeof isAdmin !== 'undefined' && isAdmin);
   const warn = isAdm
-    ? 'Bạn là ADMIN.\n\nXóa TẤT CẢ tiến trình (xu, cây, ô x50, túi đồ, buff…)?\n\n→ Quyền ADMIN vẫn được giữ.\n→ Tên / avatar / ngày sinh giữ lại.\n\nHành động KHÔNG hoàn tác!'
-    : 'Xóa TẤT CẢ tiến trình (xu, cây, ô nâng cấp, túi đồ, buff…)?\n\n→ Tài khoản vẫn đăng nhập được.\n→ Nếu bạn là người đầu tiên của game, vẫn là admin.\n\nHành động KHÔNG hoàn tác!';
+    ? 'Bạn là ADMIN.\n\nXóa TẤT CẢ tiến trình (xu, đàn, ô x50, túi đồ, buff…)?\n\n→ Quyền ADMIN vẫn được giữ.\n→ Tên / avatar / ngày sinh giữ lại.\n\nHành động KHÔNG hoàn tác!'
+    : 'Xóa TẤT CẢ tiến trình (xu, đàn, chuồng nâng cấp, túi đồ, buff…)?\n\n→ Tài khoản vẫn đăng nhập được.\n→ Nếu bạn là người đầu tiên của game, vẫn là admin.\n\nHành động KHÔNG hoàn tác!';
   if (!confirm(warn)) return;
   if (!confirm('Xác nhận lần 2: thật sự muốn làm lại từ đầu?')) return;
 
@@ -1818,7 +1818,7 @@ function mountAllPillDropdowns(root) {
     'merge-protect': 'Bảo hộ:',
     'empty-upgrade-select': 'Nâng cấp:',
     'pen-upgrade-select': 'Nâng cấp:',
-    'p-type': 'Loại cây:'
+    'p-type': 'Loại động vật:'
   };
   scope.querySelectorAll('select').forEach(sel => {
     if (sel.closest && sel.closest('.pill-dd') && sel.dataset.pillMounted === '1') {
@@ -1845,7 +1845,7 @@ function renderFarmSwitcher() {
   if (typeof Game.ensureFarms === 'function') Game.ensureFarms();
   const n = Game.getFarmCount();
   const active = Game.getActiveFarmIndex();
-  const maxP = Game.MAX_PLOTS_PER_GARDEN || 99;
+  const maxP = Game.MAX_PENS_PER_FARM || 99;
 
   const activePens = (currentPlayer.farms && currentPlayer.farms[active]) || [];
   const activeCount = activePens.length || 0;
@@ -1871,7 +1871,7 @@ function renderFarmSwitcher() {
 
   host.innerHTML = `
     <div class="pill-dd" id="farm-dropdown">
-      <button type="button" class="pill-dd-trigger" id="farm-dd-trigger" aria-haspopup="listbox" aria-expanded="false" title="Chọn vườn">
+      <button type="button" class="pill-dd-trigger" id="farm-dd-trigger" aria-haspopup="listbox" aria-expanded="false" title="Chọn trại">
         <span class="pill-dd-trigger-label">Trại ${active + 1} · ${activeCount}/${maxP}</span>
         ${PILL_ARROW_SVG}
       </button>
@@ -1988,7 +1988,7 @@ function renderFarm() {
       div.innerHTML = `
         <div class="pen-icon">🟫</div>
         <div class="pen-name">Ô trống</div>
-        <div class="pen-status">Nhấn để trồng</div>
+        <div class="pen-status">Nhấn để nuôi</div>
       `;
       div.addEventListener('click', () => openEmptyPenModal(i));
     } else {
@@ -2008,10 +2008,10 @@ function renderFarm() {
 
         let waterBadge = '';
         let fertBadge = '';
-        if (pen.waterCount > 0) waterBadge = `<span class="pen-badge-water" title="Đã tưới ${pen.waterCount}/3">💧${pen.waterCount > 1 ? pen.waterCount : ''}</span>`;
+        if (pen.waterCount > 0) waterBadge = `<span class="pen-badge-water" title="Đã chăm ${pen.waterCount}/3">💧${pen.waterCount > 1 ? pen.waterCount : ''}</span>`;
         if (pen.feedId) {
           const f = Game.getFeed(pen.feedId);
-          fertBadge = `<span class="pen-badge-fert" title="${f ? f.name : 'Đã bón'}">${f ? f.icon : '🧪'}</span>`;
+          fertBadge = `<span class="pen-badge-fert" title="${f ? f.name : 'Đã cho ăn'}">${f ? f.icon : '🧪'}</span>`;
         }
         const isMyth = !!(pen.seedMyth || (Game.getPenSeedTier && Game.getPenSeedTier(pen) === 'myth'));
         const isStar = !isMyth && !!pen.animalStar;
@@ -2031,7 +2031,7 @@ function renderFarm() {
           <div class="pen-badges"><span class="pen-badge-left">${waterBadge}${starBadge}</span><span class="pen-badge-right">${fertBadge}</span></div>
           <div class="pen-icon">${stageIcon}</div>
           <div class="pen-name">${animal.name}${isMyth ? ' ✨' : (isStar ? ' ⭐' : '')}</div>
-          <div class="pen-status" data-role="status">${ready ? '✨ Ra hoa/quả!' : stage.label + ' · ' + progress + '%'}</div>
+          <div class="pen-status" data-role="status">${ready ? '✨ Sẵn sàng thu!' : stage.label + ' · ' + progress + '%'}</div>
           ${timerHtml}
           ${!ready ? `<div class="pen-progress"><div class="pen-progress-bar" data-role="bar" style="width:${progress}%"></div></div>` : ''}
         `;
@@ -2164,7 +2164,7 @@ function openAnimalModal(plotId) {
       const qtyStr = (mythN ? '✨' + mythN + ' ' : '') + (starN ? '⭐' + starN + ' ' : '') + have.toLocaleString();
       const nameLong = nameStr.length > 14 ? ' text-long' : (nameStr.length > 10 ? ' text-mid' : '');
       const qtyLong = qtyStr.length > 16 ? ' text-long' : (qtyStr.length > 12 ? ' text-mid' : '');
-      // Ưu tiên kind khi trồng: myth > star > normal
+      // Ưu tiên kind khi nuôi: myth > star > normal
       const prefer = mythN > 0 ? 'myth' : (starN > 0 ? 'star' : 'normal');
       opt.innerHTML = `
         <span class="icon">${animal.icon}</span>
@@ -2176,7 +2176,7 @@ function openAnimalModal(plotId) {
         <div class="animal-qty-row">
           <input type="number" class="animal-qty-input" min="1" max="${Math.max(1, maxAnimal)}" value="1" ${maxAnimal < 1 ? 'disabled' : ''} />
           <button class="btn btn-primary btn-sm btn-animal-n" data-id="${id}" data-kind="${prefer}" ${maxAnimal < 1 ? 'disabled' : ''}>
-            <i class="fa-solid fa-youngling"></i> Trồng
+            <i class="fa-solid fa-paw"></i> Nuôi
           </button>
         </div>
       `;
@@ -2214,12 +2214,12 @@ function openPenModal(plotId) {
   const remain = Game.getRemainingSeconds(pen);
   const stage = Game.getStage(pen);
 
-  const waterDisp = (typeof Game.getWaterDisplayState === 'function')
-    ? Game.getWaterDisplayState(pen)
+  const waterDisp = (typeof Game.getCareDisplayState === 'function')
+    ? Game.getCareDisplayState(pen)
     : { text: `${pen.waterCount || 0}/3 ${pen.watered ? '💧' : ''}`, active: (pen.waterCount || 0) >= 3 };
   const fertDisp = (typeof Game.getFertDisplayState === 'function')
     ? Game.getFertDisplayState(pen)
-    : { text: pen.feedId ? ((Game.getFeed(pen.feedId) || {}).name || 'Đã bón') : 'Chưa cho ăn phân', active: !!pen.feedId };
+    : { text: pen.feedId ? ((Game.getFeed(pen.feedId) || {}).name || 'Đã cho ăn') : 'Chưa cho ăn phân', active: !!pen.feedId };
   let fertText = fertDisp.text;
 
   document.getElementById('pen-title').innerHTML = `${animal.icon} ${animal.name}`;
@@ -2228,17 +2228,17 @@ function openPenModal(plotId) {
       <p><strong>Giai đoạn:</strong> <span data-role="pen-stage">${ready ? '✨ Sẵn sàng thu hoạch' : stage.label + ' (' + progress + '%)'}</span></p>
       <p><strong>Thời gian còn:</strong> <span data-role="pen-remain">${ready ? '0s' : Game.formatTime(remain)}</span></p>
       <div class="pen-detail-progress">
-        <div class="pen-detail-progress-label">Tiến độ ra hoa/quả: <strong data-role="pen-pct">${Math.min(100, progress)}%</strong></div>
+        <div class="pen-detail-progress-label">Tiến độ sẵn sàng thu: <strong data-role="pen-pct">${Math.min(100, progress)}%</strong></div>
         <div class="pen-progress pen-progress-lg"><div class="pen-progress-bar" data-role="pen-bar" style="width:${Math.min(100, progress)}%"></div></div>
       </div>
-      <p><strong>Tưới nước:</strong> <span data-role="pen-water" class="${waterDisp.active ? '' : 'pen-boost-off'}">${waterDisp.text}</span></p>
+      <p><strong>Chăm sóc:</strong> <span data-role="pen-water" class="${waterDisp.active ? '' : 'pen-boost-off'}">${waterDisp.text}</span></p>
       <p><strong>Thức ăn:</strong> <span data-role="pen-fert" class="${fertDisp.active ? '' : 'pen-boost-off'}">${fertText}</span></p>
       <p><strong>Sản lượng gốc:</strong> ${animal.yield} · Giá bán: ${animal.sellPrice}🪙</p>
       ${animal.desc ? `<p class="pen-detail-desc">${animal.desc}</p>` : ''}
     </div>
   `;
 
-  document.getElementById('btn-water').style.display = ready || waterDisp.active ? 'none' : 'inline-flex';
+  document.getElementById('btn-care').style.display = ready || waterDisp.active ? 'none' : 'inline-flex';
   document.getElementById('btn-feedAction').style.display = ready || fertDisp.active ? 'none' : 'inline-flex';
   document.getElementById('btn-harvest').style.display = ready ? 'inline-flex' : 'none';
   
@@ -2302,12 +2302,12 @@ function softUpdatePenModal() {
   const barEl = detail.querySelector('[data-role="pen-bar"]');
   if (barEl) barEl.style.width = Math.min(100, progress) + '%';
 
-  const waterDisp = (typeof Game.getWaterDisplayState === 'function')
-    ? Game.getWaterDisplayState(pen)
+  const waterDisp = (typeof Game.getCareDisplayState === 'function')
+    ? Game.getCareDisplayState(pen)
     : { text: `${pen.waterCount || 0}/3`, active: (pen.waterCount || 0) >= 3 };
   const fertDisp = (typeof Game.getFertDisplayState === 'function')
     ? Game.getFertDisplayState(pen)
-    : { text: pen.feedId ? 'Đã bón' : 'Chưa cho ăn phân', active: !!pen.feedId };
+    : { text: pen.feedId ? 'Đã cho ăn' : 'Chưa cho ăn phân', active: !!pen.feedId };
 
   const waterEl = detail.querySelector('[data-role="pen-water"]');
   if (waterEl) {
@@ -2321,15 +2321,15 @@ function softUpdatePenModal() {
   }
 
   
-  const btnWater = document.getElementById('btn-water');
+  const btnCare = document.getElementById('btn-care');
   const btnFert = document.getElementById('btn-feedAction');
   const btnHarvest = document.getElementById('btn-harvest');
-  if (btnWater) btnWater.style.display = ready || waterDisp.active ? 'none' : 'inline-flex';
+  if (btnCare) btnCare.style.display = ready || waterDisp.active ? 'none' : 'inline-flex';
   if (btnFert) btnFert.style.display = ready || fertDisp.active ? 'none' : 'inline-flex';
   if (btnHarvest) btnHarvest.style.display = ready ? 'inline-flex' : 'none';
 }
 
-document.getElementById('btn-water').addEventListener('click', async () => {
+document.getElementById('btn-care').addEventListener('click', async () => {
   const res = await Game.waterPen(selectedPenId);
   showToast(res.msg, res.ok ? 'success' : 'error');
   closeModals();
@@ -2464,13 +2464,13 @@ function openBulkModal(action) {
   bulkAction = action;
   bulkFertId = null;
   const titles = {
-    water: 'Tưới bao nhiêu ô?',
+    water: 'Chăm bao nhiêu ô?',
     fert: 'Cho ăn bao nhiêu ô?',
     harvest: 'Thu hoạch bao nhiêu ô?'
   };
   const hints = {
-    water: 'Nhập số ô cần tưới (mỗi ô +1 lần nếu đủ điều kiện)',
-    fert: 'Chọn loại phân, rồi nhập số ô cần bón',
+    water: 'Nhập số ô cần chăm (mỗi ô +1 lần nếu đủ điều kiện)',
+    fert: 'Chọn loại cám, rồi nhập số ô cần bón',
     harvest: 'Nhập số ô đã chín để thu hoạch'
   };
   document.getElementById('bulk-title').textContent = titles[action] || 'Chọn số lượng';
@@ -2569,7 +2569,7 @@ function openBulkModal(action) {
   setTimeout(() => inp?.focus(), 80);
 }
 
-document.getElementById('btn-water-all')?.addEventListener('click', () => {
+document.getElementById('btn-care-all')?.addEventListener('click', () => {
   document.getElementById('farm-tools-dd')?.classList.remove('open');
   openBulkModal('water');
 });
@@ -2748,7 +2748,7 @@ function renderUxPager(el, { page, totalPages, onChange }) {
 }
 
 
-let currentShopTab = 'hoa';
+let currentShopTab = 'gia-cam';
 let shopPage = 0;
 const SHOP_PAGE_SIZE = 21;
 
@@ -2771,11 +2771,11 @@ document.getElementById('shop-search')?.addEventListener('input', () => {
 
 function getShopAnimalsFiltered() {
   let animals = Game.getAnimals();
-  if (currentShopTab === 'hoa') animals = animals.filter(p => p.type === 'hoa');
-  else if (currentShopTab === 'qua') animals = animals.filter(p => p.type === 'qua');
-  else if (currentShopTab === 'la') animals = animals.filter(p => p.type === 'la' || p.type === 'rau');
-  else if (currentShopTab === 'cay') animals = animals.filter(p => p.type === 'cay');
-  else if (currentShopTab === 'kytu') animals = animals.filter(p => p.type === 'kytu' || p.type === 'so');
+  if (currentShopTab === 'gia-cam') animals = animals.filter(p => p.type === 'gia-cam');
+  else if (currentShopTab === 'nho') animals = animals.filter(p => p.type === 'nho');
+  else if (currentShopTab === 'gia-suc') animals = animals.filter(p => p.type === 'gia-suc');
+  else if (currentShopTab === 'lon') animals = animals.filter(p => p.type === 'lon');
+  else if (currentShopTab === 'dac-biet') animals = animals.filter(p => p.type === 'dac-biet');
   else if (currentShopTab === 'khac') animals = animals.filter(p => p.type === 'khac');
   else if (currentShopTab === 'limited') {
     animals = animals.filter(p => Game.isAnimalLimited(p));
@@ -2853,12 +2853,12 @@ function renderShop() {
   grid.innerHTML = '';
   const seeds = (currentPlayer && currentPlayer.inventory && currentPlayer.inventory.animals) || {};
 
-  if (currentShopTab === 'odat') {
+  if (currentShopTab === 'chuong') {
     const countEl = document.getElementById('shop-count');
     const price = (currentSettings && currentSettings.penPrice) || 500;
     if (typeof Game.ensureFarms === 'function') Game.ensureFarms();
     const have = currentPlayer?.pens?.length || 0;
-    const maxP = (Game.MAX_PLOTS_PER_GARDEN || 99);
+    const maxP = (Game.MAX_PENS_PER_FARM || 99);
     const gIdx = (typeof Game.getActiveFarmIndex === 'function' ? Game.getActiveFarmIndex() : 0) + 1;
     const gCount = typeof Game.getFarmCount === 'function' ? Game.getFarmCount() : 1;
     if (countEl) countEl.textContent = 'Mở rộng Trại ' + gIdx;
@@ -2892,7 +2892,7 @@ function renderShop() {
           <div class="shop-icon">🟫</div>
           <div class="shop-name">Mua thêm chuồng · Trại ${gIdx}</div>
           <span class="shop-type">Tối đa ${maxP} ô / trại · Đủ ${maxP} ô mở trại mới</span>
-          <div class="shop-meta"><span>Trại ${gIdx}: <strong>${have}/${maxP}</strong> ô · Tổng ${gCount} vườn</span></div>
+          <div class="shop-meta"><span>Trại ${gIdx}: <strong>${have}/${maxP}</strong> ô · Tổng ${gCount} trại</span></div>
           <div class="shop-price">${price.toLocaleString()} 🪙 / ô</div>
           <div class="buy-qty">
             <input type="number" id="pen-qty-input" class="qty-input" min="1" max="20" value="1" />
@@ -2903,7 +2903,7 @@ function renderShop() {
           <div class="shop-icon">⚡</div>
           <div class="shop-name">Nâng tất cả ô → x50 vĩnh viễn</div>
           <span class="shop-type">Mọi trại · chỉ ô dưới x50</span>
-          <div class="shop-desc">Nâng vĩnh viễn hệ số tốc độ mọi chuồng (mọi vườn) lên x50. Ô đã ≥ x50 bỏ qua.</div>
+          <div class="shop-desc">Nâng vĩnh viễn hệ số tốc độ mọi chuồng (mọi trại) lên x50. Ô đã ≥ x50 bỏ qua.</div>
           <div class="shop-meta"><span>${upgradeAllCount ? (upgradeAllCount + ' ô cần nâng') : 'Đã đủ x50'}</span></div>
           <div class="shop-price">${upgradeAllCount ? (upgradeAllNeed.toLocaleString() + ' 🪙') : '—'}</div>
           <button class="btn btn-warning" id="btn-upgrade-all-x50" ${upgradeAllCount ? '' : 'disabled'}>
@@ -2920,7 +2920,7 @@ function renderShop() {
     });
     document.getElementById('btn-upgrade-all-x50')?.addEventListener('click', async () => {
       if (!upgradeAllCount) return;
-      if (!confirm('Nâng ' + upgradeAllCount + ' ô (mọi vườn) → x50 vĩnh viễn?\nChi phí: ' + upgradeAllNeed.toLocaleString() + ' 🪙')) return;
+      if (!confirm('Nâng ' + upgradeAllCount + ' ô (mọi trại) → x50 vĩnh viễn?\nChi phí: ' + upgradeAllNeed.toLocaleString() + ' 🪙')) return;
       const res = await Features.upgradeAllPensTo(50);
       showToast(res.msg, res.ok ? 'success' : 'error');
       updateCoins();
@@ -2943,7 +2943,7 @@ function renderShop() {
     grid.appendChild(hint);
     const penOpts = (currentPlayer && currentPlayer.pens ? currentPlayer.pens : []).map((pl, i) => {
       const sm = Game.getPenSpeedMult ? Game.getPenSpeedMult(pl) : 1;
-      return `<option value="${i}">Ô #${i + 1}${pl.animalId ? ' · trồng' : ' · trống'} · x${sm}</option>`;
+      return `<option value="${i}">Ô #${i + 1}${pl.animalId ? ' · nuôi' : ' · trống'} · x${sm}</option>`;
     }).join('');
     packs.forEach(pack => {
       const card = document.createElement('div');
@@ -3025,7 +3025,7 @@ function renderShop() {
 
   if (currentShopTab === 'tien') {
     const countEl = document.getElementById('shop-count');
-    if (countEl) countEl.textContent = 'Tiên tự chăm vườn';
+    if (countEl) countEl.textContent = 'Tiên tự chăm trại';
     document.getElementById('shop-pager').innerHTML = '';
     const remain = Game.hasFairy() ? Game.formatTime(Game.fairyRemainingSec()) : 'Không active';
     const info = document.createElement('div');
@@ -3034,7 +3034,7 @@ function renderShop() {
     const fertHint = fcfg.useFeed
       ? (fcfg.fertSource === 'specific' ? 'cho ăn 1 loại từ kho' : 'cho ăn từ kho')
       : 'không cho ăn phân';
-    info.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Tiên active: <strong>${remain}</strong> — mưa tưới hết · 3h theo cấu hình (${fertHint})
+    info.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Tiên active: <strong>${remain}</strong> — mưa chăm hết · 3h theo cấu hình (${fertHint})
       <button type="button" class="btn btn-secondary btn-sm" id="btn-fairy-cfg-shop" style="margin-left:8px">Cấu hình</button>`;
     grid.appendChild(info);
     document.getElementById('btn-fairy-cfg-shop')?.addEventListener('click', () => openFairyConfigModal());
@@ -3044,7 +3044,7 @@ function renderShop() {
       card.innerHTML = `
         <div class="shop-icon">${pack.icon}</div>
         <div class="shop-name">${pack.name}</div>
-        <span class="shop-type">Buff vườn</span>
+        <span class="shop-type">Buff trại</span>
         <div class="shop-desc">Tự chăm ${pack.days} ngày (cộng dồn nếu còn hạn).</div>
         <div class="shop-price">${pack.price.toLocaleString()} 🪙</div>
         <button class="btn btn-primary btn-buy-fairy" data-id="${pack.id}"><i class="fa-solid fa-cart-plus"></i> Mua</button>
@@ -3065,18 +3065,18 @@ function renderShop() {
 
   if (currentShopTab === 'nyc') {
     const countEl = document.getElementById('shop-count');
-    if (countEl) countEl.textContent = 'Người Yêu Cũ tự thu & trồng';
+    if (countEl) countEl.textContent = 'Người Yêu Cũ tự thu & nuôi';
     document.getElementById('shop-pager').innerHTML = '';
     const remain = Game.hasNyc() ? Game.formatTime(Game.nycRemainingSec()) : 'Không active';
     const cfg = Game.getNycConfig();
     const cfgAnimal = cfg.animalId ? Game.getAnimal(cfg.animalId) : null;
     const cfgText = cfgAnimal
       ? `${cfgAnimal.icon} ${cfgAnimal.name} · ${cfg.mode === 'count' ? 'x' + cfg.count + '/lần' : 'nuôi hết'}`
-      : 'Chưa chọn hạt';
+      : 'Chưa chọn giống';
     const info = document.createElement('div');
     info.className = 'shop-event-banner';
     info.innerHTML = `<i class="fa-solid fa-heart-crack"></i> NYC active: <strong>${remain}</strong> — ${cfgText}
-      <button type="button" class="btn btn-secondary btn-sm" id="btn-nyc-cfg-shop" style="margin-left:8px">Cấu hình hạt</button>`;
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-nyc-cfg-shop" style="margin-left:8px">Cấu hình giống</button>`;
     grid.appendChild(info);
     document.getElementById('btn-nyc-cfg-shop')?.addEventListener('click', () => openNycConfigModal());
     DEFAULT_NYC_PACKS.forEach(pack => {
@@ -3085,7 +3085,7 @@ function renderShop() {
       card.innerHTML = `
         <div class="shop-icon">${pack.icon}</div>
         <div class="shop-name">${pack.name}</div>
-        <span class="shop-type">Buff vườn</span>
+        <span class="shop-type">Buff trại</span>
         <div class="shop-desc">Con chín → thu ngay + nuôi lại · ${pack.days} ngày (cộng dồn).</div>
         <div class="shop-price">${pack.price.toLocaleString()} 🪙</div>
         <button class="btn btn-primary btn-buy-nyc" data-id="${pack.id}"><i class="fa-solid fa-cart-plus"></i> Mua</button>
@@ -3145,9 +3145,9 @@ function renderShop() {
     return;
   }
 
-  if (currentShopTab === 'phan') {
+  if (currentShopTab === 'cam') {
     const countEl = document.getElementById('shop-count');
-    if (countEl) countEl.textContent = DEFAULT_FEEDS.length + ' loại phân';
+    if (countEl) countEl.textContent = DEFAULT_FEEDS.length + ' loại cám';
     document.getElementById('shop-pager').innerHTML = '';
 
     DEFAULT_FEEDS.forEach(fert => {
@@ -3408,7 +3408,7 @@ function renderShop() {
     const countEl = document.getElementById('shop-count');
     document.getElementById('shop-pager').innerHTML = '';
     const pets = Game.getPets();
-    if (countEl) countEl.textContent = pets.length + ' pet · đi dạo vườn, hiếm khi nhặt xu';
+    if (countEl) countEl.textContent = pets.length + ' pet · đi dạo trại, hiếm khi nhặt xu';
     const owned = (currentPlayer && currentPlayer.pets) || {};
     pets.forEach(pet => {
       const have = !!owned[pet.id];
@@ -3449,7 +3449,7 @@ function renderShop() {
 
   
   const activeLimited = Game.getAnimals().filter(p => Game.isAnimalLimited(p) && Game.isAnimalAvailable(p));
-  if (activeLimited.length && currentShopTab !== 'odat' && currentShopTab !== 'phan' && currentShopTab !== 'baoho' && currentShopTab !== 'tien' && currentShopTab !== 'nyc' && currentShopTab !== 'helper' && currentShopTab !== 'khung' && currentShopTab !== 'companion') {
+  if (activeLimited.length && currentShopTab !== 'chuong' && currentShopTab !== 'cam' && currentShopTab !== 'baoho' && currentShopTab !== 'tien' && currentShopTab !== 'nyc' && currentShopTab !== 'helper' && currentShopTab !== 'khung' && currentShopTab !== 'companion') {
     const banner = document.createElement('div');
     banner.className = 'shop-event-banner';
     banner.innerHTML = `<i class="fa-solid fa-bolt"></i> <strong>${activeLimited.length} con Limited</strong> đang mở bán — nhanh tay trước khi hết sự kiện!`;
@@ -3468,7 +3468,7 @@ function renderShop() {
     const eventLine = limited
       ? `<div class="shop-event-line">${available ? '🔥 ' + Game.getLimitedEventLabel(animal) : '⛔ Hết / ngoài sự kiện'}</div>`
       : '';
-    const isTextIcon = animal.type === 'kytu' || animal.type === 'so';
+    const isTextIcon = animal.type === 'dac-biet' || animal.type === 'so';
     let iconHtml = animal.icon || '';
     if (isTextIcon) {
       const raw = String(animal.icon || animal.name || '').slice(0, 10);
@@ -3488,8 +3488,8 @@ function renderShop() {
         <span><i class="fa-solid fa-box"></i> x${animal.yield}</span>
         <span><i class="fa-solid fa-coins"></i> ${animal.sellPrice}</span>
       </div>
-      <div class="shop-owned">Bạn có: <strong>${have.toLocaleString()}</strong> hạt</div>
-      <div class="shop-price">${animal.buyPrice} 🪙 / hạt</div>
+      <div class="shop-owned">Bạn có: <strong>${have.toLocaleString()}</strong> con</div>
+      <div class="shop-price">${animal.buyPrice} 🪙 / con</div>
       <div class="buy-qty">
         <input type="number" class="qty-input" min="1" value="1" data-id="${animal.id}" ${!available ? 'disabled' : ''} placeholder="Số lượng" inputmode="numeric" />
         <button class="btn btn-primary btn-buy" data-id="${animal.id}" ${!available ? 'disabled' : ''}><i class="fa-solid fa-cart-plus"></i> ${available ? 'Mua' : 'Khóa'}</button>
@@ -3514,7 +3514,7 @@ function renderShop() {
         buy(qty);
       },
       onHold: () => openQtyPickModal({
-        title: 'Mua bao nhiêu hạt?',
+        title: 'Mua bao nhiêu con?',
         hint: 'Nhập số lượng (không giới hạn). Tất cả = theo số xu hiện có.',
         confirmLabel: 'Mua',
         maxQty: 0,
@@ -3596,7 +3596,7 @@ function renderInventory() {
       const tag = kind === 'myth' ? ' ✨' : (kind === 'star' ? ' ⭐' : '');
       const nameStr = animal.name + tag;
       const nameLong = nameStr.length > 12 ? ' text-long' : (nameStr.length > 8 ? ' text-mid' : '');
-      const qtyStr = 'x' + qty.toLocaleString() + ' · ' + unit + '🪙/hạt';
+      const qtyStr = 'x' + qty.toLocaleString() + ' · ' + unit + '🪙/giống';
       const qtyLong = qtyStr.length > 18 ? ' text-long' : (qtyStr.length > 14 ? ' text-mid' : '');
       const btnCls = kind === 'myth' ? 'btn-warning' : (kind === 'star' ? 'btn-warning' : 'btn-primary');
       return `
@@ -3621,15 +3621,15 @@ function renderInventory() {
   } else {
     let sHtml = '';
     sHtml += renderSeedBag(
-      seeds, 'normal', '🌱 Con thường', 'Chưa có con thường.',
+      seeds, 'normal', '🌱 Giống thường', 'Chưa có con thường.',
       p => Math.max(1, Math.floor((p.buyPrice || 1) * 0.5))
     );
     sHtml += renderSeedBag(
-      stars, 'star', '⭐ Con ghép sao', 'Chưa có con sao. Ghép ở tab Ghép hạt.',
+      stars, 'star', '⭐ Con ghép sao', 'Chưa có con sao. Ghép ở tab Ghép giống.',
       p => Math.max(1, Math.floor((p.buyPrice || 1) * 0.75))
     );
     sHtml += renderSeedBag(
-      myths, 'myth', '✨ Con huyền thoại', 'Chưa có con huyền thoại. Ghép 2 con sao ở tab Ghép hạt.',
+      myths, 'myth', '✨ Con huyền thoại', 'Chưa có con huyền thoại. Ghép 2 con sao ở tab Ghép giống.',
       p => Math.max(1, Math.floor((p.buyPrice || 1) * 1.2))
     );
     seedsEl.innerHTML = sHtml;
@@ -3663,7 +3663,7 @@ function renderInventory() {
               ? ((currentPlayer.inventory.animalsStar && currentPlayer.inventory.animalsStar[id]) || 0)
               : ((currentPlayer.inventory.animals && currentPlayer.inventory.animals[id]) || 0));
             openQtyPickModal({
-              title: 'Bán bao nhiêu hạt?',
+              title: 'Bán bao nhiêu con?',
               hint: 'Bạn có ' + have.toLocaleString() + '. Tất cả = bán hết.',
               confirmLabel: 'Bán',
               maxQty: 0,
@@ -3772,10 +3772,10 @@ function renderInventory() {
 
   let hHtml = `
     <div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
-      <button class="btn btn-success" id="btn-sell-all-harvest"><i class="fa-solid fa-coins"></i> Bán tất cả hoa quả</button>
+      <button class="btn btn-success" id="btn-sell-all-harvest"><i class="fa-solid fa-coins"></i> Bán tất cả sản phẩm</button>
     </div>`;
   hHtml += renderHarvestBag(harvest, 'normal', '🌾 Thu hoạch thường', 'Chưa thu hoạch sản phẩm nào.', p => p.sellPrice);
-  hHtml += renderHarvestBag(harvestBought, 'bought', '🛒 Đã mua (chợ)', 'Chưa mua hoa quả từ chợ.', p => p.sellPrice);
+  hHtml += renderHarvestBag(harvestBought, 'bought', '🛒 Đã mua (chợ)', 'Chưa mua sản phẩm từ chợ.', p => p.sellPrice);
   hHtml += renderHarvestBag(harvestStar, 'star', '⭐ Ghép sao (thu từ con ⭐)', 'Chưa có sản phẩm từ con sao.', p => Math.ceil(p.sellPrice * 1.5));
   hHtml += renderHarvestBag(harvestMyth, 'myth', '✨ Huyền thoại (thu từ con ✨)', 'Chưa có sản phẩm từ con huyền thoại.', p => Math.ceil(p.sellPrice * 2));
   harvestEl.innerHTML = hHtml;
@@ -3879,7 +3879,7 @@ function renderInventory() {
         <div class="merge-box">
           <p class="merge-lead">Ghép <strong>2 con thường</strong> → <strong>1 con sao ⭐</strong></p>
           <p class="merge-sub">Thất bại mất 1 con (+ bùa nếu có). · Bấm = 1 lần · Ấn giữ = tất cả</p>
-          <label>Chọn hạt</label>
+          <label>Chọn giống</label>
           <select id="merge-animal">${opts}</select>
           <label>Bùa bảo hộ (tuỳ chọn)</label>
           <select id="merge-protect">${buildProtOpts(selProt)}</select>
@@ -3928,7 +3928,7 @@ function renderInventory() {
       const pr = protSel?.value || null;
       window._mergeSel.animalId = pid || null;
       window._mergeSel.protectId = pr || null;
-      if (!pid) { showToast('Chọn hạt!', 'error'); return; }
+      if (!pid) { showToast('Chọn giống!', 'error'); return; }
       let n;
       if (times === 'all' || times === 'max' || times === Infinity) {
         const have = (currentPlayer.inventory.animals && currentPlayer.inventory.animals[pid]) || 0;
@@ -4209,7 +4209,7 @@ function renderStats() {
     </div>
     <div class="stat-card">
       <div class="value">${s.raised || 0}</div>
-      <div class="label"><i class="fa-solid fa-youngling"></i> Đã nuôi</div>
+      <div class="label"><i class="fa-solid fa-paw"></i> Đã nuôi</div>
     </div>
     <div class="stat-card">
       <div class="value">${s.harvested || 0}</div>
@@ -4312,7 +4312,7 @@ function activityFaIcon(text, type) {
   if (t === 'fairy_rain') return 'fa-solid fa-cloud-sun-rain';
   if (t === 'rain') return 'fa-solid fa-cloud-rain';
   if (t === 'fairy_care') return 'fa-solid fa-wand-magic-sparkles';
-  if (s.indexOf('Trồng') >= 0 || s.indexOf('nuôi lại') >= 0) return 'fa-solid fa-youngling';
+  if (s.indexOf('Nuôi') >= 0 || s.indexOf('nuôi lại') >= 0) return 'fa-solid fa-paw';
   if (s.indexOf('Tưới') >= 0 || s.indexOf('tưới') >= 0) return 'fa-solid fa-droplet';
   if (s.indexOf('Bón') >= 0 || s.indexOf('phân') >= 0) return 'fa-solid fa-flask';
   if (s.indexOf('Tiên') >= 0) return 'fa-solid fa-wand-magic-sparkles';
@@ -4622,7 +4622,7 @@ function softUpdateFarmUI() {
     if (ready && !el.classList.contains('ready')) { needFull = true; return; }
     if (!ready && el.classList.contains('ready')) { needFull = true; return; }
     const st = el.querySelector('[data-role="status"]');
-    if (st) st.textContent = ready ? '✨ Ra hoa/quả!' : stage.label + ' · ' + progress + '%';
+    if (st) st.textContent = ready ? '✨ Sẵn sàng thu!' : stage.label + ' · ' + progress + '%';
     const remain = Game.getRemainingSeconds(pen);
     let tm = el.querySelector('[data-role="timer"]');
     if (!ready) {
@@ -4681,7 +4681,7 @@ function updateGlobalTimer() {
   // Nút đếm ngược thu hoạch cạnh Hỗ trợ (con còn ≤ 10s)
   updateHarvestCountdownButton();
 
-  // Đếm ngược 30 phút đến trận mưa tiếp theo (Tiên tưới khi mưa)
+  // Đếm ngược 30 phút đến trận mưa tiếp theo (Tiên chăm khi mưa)
   if (typeof Game !== 'undefined' && Game.getRainRemainingSec) {
     const raining = !!(Game.raining && Game.rainUntil && Game.rainUntil > (typeof nowMs === 'function' ? nowMs() : Date.now()));
     const remain = Game.getRainRemainingSec();
@@ -4689,11 +4689,11 @@ function updateGlobalTimer() {
     setCycle(label, !raining && remain <= 0);
     if (btn) {
       if (raining) {
-        btn.title = `🌧️ Đang mưa — Tiên đang tưới · còn ${label}`;
+        btn.title = `🌧️ Đang mưa — Tiên đang chăm · còn ${label}`;
       } else if (remain <= 0) {
         btn.title = '🌧️ Sắp mưa / đang kích hoạt mưa — Tiên sẽ tưới';
       } else {
-        btn.title = `🌧️ Mưa sau: ${label} (mỗi 30 phút · Tiên tưới khi mưa)`;
+        btn.title = `🌧️ Mưa sau: ${label} (mỗi 30 phút · Tiên chăm khi mưa)`;
       }
     }
   } else {
@@ -5045,12 +5045,12 @@ async function renderMarket() {
         <div style="font-size:1.6rem">${L.itemIcon || '🌱'}</div>
         <strong>${L.itemName || L.itemId}</strong>
         <div class="shop-meta"><span>${
-          L.kind === 'seed' ? 'Hạt'
+          L.kind === 'seed' ? 'Giống'
           : L.kind === 'animalStar' ? 'Con ⭐'
-          : L.kind === 'harvestStar' ? 'Nông sản ⭐'
-          : L.kind === 'harvestMyth' ? 'Nông sản ✨'
-          : L.kind === 'harvestBought' ? 'Nông sản (chợ)'
-          : 'Nông sản'
+          : L.kind === 'harvestStar' ? 'Sản phẩm ⭐'
+          : L.kind === 'harvestMyth' ? 'Sản phẩm ✨'
+          : L.kind === 'harvestBought' ? 'Sản phẩm (chợ)'
+          : 'Sản phẩm'
         } · x${L.qty}</span></div>
         <div class="shop-price">${(L.priceEach || 0).toLocaleString()}🪙 / cái</div>
         <div class="bulk-hint">Người bán: ${L.sellerName || '—'}</div>
@@ -5378,7 +5378,7 @@ function renderKitchen() {
     const priceM = (r) => Game.getDishSellPrice ? Game.getDishSellPrice(r, 'myth') : Math.ceil((r.sellPrice || 0) * 2);
 
     cookEl.innerHTML = `
-      <p class="bulk-hint">Trang ${window.kitchenPage}/${totalPages} · ${show.length}/${list.length} món. Nấu bằng nông sản <strong>thường</strong> / <strong>⭐ sao</strong> / <strong>✨ huyền thoại</strong> — giá bán món khác nhau.</p>
+      <p class="bulk-hint">Trang ${window.kitchenPage}/${totalPages} · ${show.length}/${list.length} món. Nấu bằng sản phẩm <strong>thường</strong> / <strong>⭐ sao</strong> / <strong>✨ huyền thoại</strong> — giá bán món khác nhau.</p>
       <div class="kitchen-grid">` + show.map(r => {
       const ings = (r.ingredients || []).map(ing => {
         const p = Game.getAnimal(ing.animalId);
@@ -5406,9 +5406,9 @@ function renderKitchen() {
         </div>
         <div class="kitchen-actions kitchen-actions-tier">
           <input type="number" class="qty-input kitchen-qty" min="1" max="99" value="1" data-rid="${r.id}" ${can ? '' : 'disabled'} />
-          <button class="btn btn-primary btn-sm btn-cook" data-id="${r.id}" data-tier="normal" ${canN ? '' : 'disabled'} title="Nấu bằng nông sản thường">Nấu</button>
-          <button class="btn btn-warning btn-sm btn-cook" data-id="${r.id}" data-tier="star" ${canS ? '' : 'disabled'} title="Nấu bằng nông sản ⭐">⭐</button>
-          <button class="btn btn-secondary btn-sm btn-cook" data-id="${r.id}" data-tier="myth" ${canM ? '' : 'disabled'} title="Nấu bằng nông sản ✨">✨</button>
+          <button class="btn btn-primary btn-sm btn-cook" data-id="${r.id}" data-tier="normal" ${canN ? '' : 'disabled'} title="Nấu bằng sản phẩm thường">Nấu</button>
+          <button class="btn btn-warning btn-sm btn-cook" data-id="${r.id}" data-tier="star" ${canS ? '' : 'disabled'} title="Nấu bằng sản phẩm ⭐">⭐</button>
+          <button class="btn btn-secondary btn-sm btn-cook" data-id="${r.id}" data-tier="myth" ${canM ? '' : 'disabled'} title="Nấu bằng sản phẩm ✨">✨</button>
         </div>
       </div>`;
     }).join('') + '</div>';
@@ -5636,7 +5636,7 @@ async function maybeSendBirthdayMailLocal() {
     if (!exist.val()) {
       await ref.set({
         title: '🎂 Chúc mừng sinh nhật!',
-        body: `Chúc ${getDisplayName()} sinh nhật vui vẻ!\nTrại Xanh gửi lời chúc tốt đẹp và mong bạn luôn vui khi nuôi cây.`,
+        body: `Chúc ${getDisplayName()} sinh nhật vui vẻ!\nTrại Xanh gửi lời chúc tốt đẹp và mong bạn luôn vui khi chăn nuôi.`,
         from: 'Trại Xanh',
         type: 'birthday',
         at: Date.now(),
@@ -5855,7 +5855,7 @@ function renderHelperRulesList() {
     const row = document.createElement('div');
     row.className = 'helper-rule-row';
     const name = Game.getItemDisplayName(r.kind, r.id);
-    const kindLabel = r.kind === 'seed' ? 'Hạt' : (r.kind === 'fert' ? 'Phân' : 'Bảo hộ');
+    const kindLabel = r.kind === 'seed' ? 'Giống' : (r.kind === 'fert' ? 'Cám' : 'Bảo hộ');
     row.innerHTML = `
       <div class="helper-rule-top">
         <span class="helper-rule-kind">${kindLabel}</span>

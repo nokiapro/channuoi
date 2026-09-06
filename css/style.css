@@ -677,7 +677,7 @@ button.btn:active {
 /* ===== Viền theo loại hạt: thường = trắng, sao = vàng, huyền thoại = tím ===== */
 /* Chỉ animation viền (border/box-shadow), bỏ animation xoay/cây */
 
-/* Hạt bình thường → viền trắng (glow nhỏ, không tràn mép) */
+/* Giống bình thường → viền trắng (glow nhỏ, không tràn mép) */
 .pen.pen-normal.growing,
 .pen.pen-normal.ready {
   border-color: #ffffff !important;
@@ -691,7 +691,7 @@ button.btn:active {
   50% { border-color: #f8fafc; box-shadow: 0 0 7px rgba(255, 255, 255, 0.28); }
 }
 
-/* Hạt sao → viền vàng */
+/* Giống sao → viền vàng */
 .pen.pen-star.growing,
 .pen.pen-star.ready {
   border-color: #fbbf24 !important;
@@ -713,7 +713,7 @@ button.btn:active {
   50% { border-color: #fcd34d; box-shadow: 0 0 8px rgba(251, 191, 36, 0.4); }
 }
 
-/* Hạt huyền thoại → viền tím (chỉ animation viền, không spin/cây) */
+/* Giống huyền thoại → viền tím (chỉ animation viền, không spin/cây) */
 .pen.pen-myth {
   border-color: #a78bfa !important;
   box-shadow: 0 0 6px rgba(139, 92, 246, 0.35), inset 0 0 10px rgba(91, 33, 182, 0.18);
@@ -727,7 +727,7 @@ button.btn:active {
 .pen.pen-myth.ready {
   animation: mythAuraPulse 2.8s ease-in-out infinite;
 }
-/* Bỏ lớp xoay conic + animation cây */
+/* Bỏ lớp xoay conic + animation con */
 .pen.pen-myth::before {
   content: none !important;
   display: none !important;
@@ -4559,7 +4559,7 @@ select.pill-dd-native {
   white-space: nowrap !important;
 }
 
-/* Dòng riêng dưới toolbar: mọi vườn trên 1 hàng (không wrap) */
+/* Dòng riêng dưới toolbar: mọi trại trên 1 hàng (không wrap) */
 .harvest-countdown-host {
   display: flex;
   flex-wrap: nowrap;
@@ -4583,7 +4583,7 @@ select.pill-dd-native {
   padding: 0;
 }
 
-/* Nút đếm ngược 10s khi cây sắp chín — mỗi vườn 1 nút, cùng 1 dòng */
+/* Nút đếm ngược 10s khi con sắp chín — mỗi trại 1 nút, cùng 1 dòng */
 .btn-boost-countdown {
   background: linear-gradient(135deg, #b45309, #f59e0b) !important;
   color: #fff !important;

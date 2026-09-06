@@ -119,7 +119,7 @@
       <section id="page-farm" class="page active">
         <div class="page-header">
           <div>
-            <h1><i class="fa-duotone fa-trees"></i> VƯỜN CỦA TÔI</h1>
+            <h1><i class="fa-duotone fa-cow"></i> TRẠI CỦA TÔI</h1>
           </div>
           <button id="btn-daily" class="btn btn-warning">
             <i class="fa-solid fa-gift"></i> Thưởng ngày
@@ -134,19 +134,19 @@
             <div class="feed-info">
               <i class="fa-solid fa-flask"></i> Thức ăn: <strong id="feed-count">0</strong>
             </div>
-            <div id="btn-global-timer" class="weather farm-cycle-chip" title="Đếm ngược 30 phút đến mưa (Tiên tưới khi mưa)" role="status">
+            <div id="btn-global-timer" class="weather farm-cycle-chip" title="Đếm ngược 30 phút đến mưa (Tiên chăm khi mưa)" role="status">
               <i class="fa-solid fa-cloud-rain"></i>
               <span id="global-timer-text">--:--:--</span>
             </div>
             <div class="farm-toolbar">
-              <div id="farm-switcher" class="farm-switcher" aria-label="Chuyển vườn"></div>
+              <div id="farm-switcher" class="farm-switcher" aria-label="Chuyển trại"></div>
               <div class="farm-tools-dd" id="farm-tools-dd">
                 <button type="button" id="btn-tools-menu" class="btn btn-primary" aria-haspopup="true" aria-expanded="false">
                   <i class="fa-solid fa-toolbox"></i> Công cụ
                   <i class="fa-solid fa-chevron-down" style="font-size:0.65rem;opacity:0.9"></i>
                 </button>
                 <div class="farm-tools-menu" id="farm-tools-menu" role="menu">
-                  <button type="button" id="btn-water-all" role="menuitem"><i class="fa-solid fa-droplet"></i> Tưới</button>
+                  <button type="button" id="btn-care-all" role="menuitem"><i class="fa-solid fa-droplet"></i> Tưới</button>
                   <button type="button" id="btn-feed-all" role="menuitem"><i class="fa-solid fa-flask"></i> Cho ăn</button>
                   <button type="button" id="btn-harvest-all" role="menuitem"><i class="fa-solid fa-basket-shopping"></i> Thu hoạch</button>
                 </div>
@@ -196,20 +196,20 @@
           <p>Hơn 1000 loại động vật hoa · lá · quả để nuôi</p>
         </div>
         <div class="shop-tabs">
-          <button class="shop-tab active" data-shop="hoa"><i class="fa-solid fa-flower"></i> Hoa</button>
-          <button class="shop-tab" data-shop="qua"><i class="fa-solid fa-apple-whole"></i> Quả</button>
-          <button class="shop-tab" data-shop="la"><i class="fa-solid fa-leaf"></i> Lá & Rau</button>
-          <button class="shop-tab" data-shop="cay"><i class="fa-solid fa-tree"></i> Cây</button>
-          <button class="shop-tab" data-shop="kytu"><i class="fa-solid fa-font"></i> Chữ & Số</button>
+          <button class="shop-tab active" data-shop="gia-cam"><i class="fa-solid fa-dove"></i> Gia cầm</button>
+          <button class="shop-tab" data-shop="nho"><i class="fa-solid fa-paw"></i> Nhỏ</button>
+          <button class="shop-tab" data-shop="gia-suc"><i class="fa-solid fa-piggy-bank"></i> Gia súc</button>
+          <button class="shop-tab" data-shop="lon"><i class="fa-solid fa-cow"></i> Lớn</button>
+          <button class="shop-tab" data-shop="dac-biet"><i class="fa-solid fa-star"></i> Đặc biệt</button>
           <button class="shop-tab" data-shop="khac"><i class="fa-solid fa-ellipsis"></i> Khác</button>
           <button class="shop-tab" data-shop="limited"><i class="fa-solid fa-bolt"></i> Limited</button>
           <button class="shop-tab" data-shop="baoho"><i class="fa-solid fa-shield-halved"></i> Bảo hộ ghép</button>
           <button class="shop-tab" data-shop="tien"><i class="fa-solid fa-wand-magic-sparkles"></i> Tiên chăm</button>
           <button class="shop-tab" data-shop="nyc"><i class="fa-solid fa-heart-crack"></i> Người Yêu Cũ</button>
           <button class="shop-tab" data-shop="helper"><i class="fa-solid fa-user-tie"></i> Giúp việc</button>
-          <button class="shop-tab" data-shop="odat"><i class="fa-solid fa-border-all"></i> Chuồng</button>
-          <button class="shop-tab" data-shop="tangtoc"><i class="fa-solid fa-gauge-high"></i> Tăng tốc ô</button>
-          <button class="shop-tab" data-shop="phan"><i class="fa-solid fa-flask"></i> Thức ăn</button>
+          <button class="shop-tab" data-shop="chuong"><i class="fa-solid fa-border-all"></i> Chuồng</button>
+          <button class="shop-tab" data-shop="tangtoc"><i class="fa-solid fa-gauge-high"></i> Tăng tốc chuồng</button>
+          <button class="shop-tab" data-shop="cam"><i class="fa-solid fa-flask"></i> Thức ăn</button>
           <button class="shop-tab" data-shop="pet"><i class="fa-solid fa-paw"></i> Pet</button>
           <button class="shop-tab" data-shop="khung"><i class="fa-solid fa-circle-notch"></i> Khung avatar</button>
           <button class="shop-tab" data-shop="companion"><i class="fa-solid fa-paw"></i> Thú cưng</button>
@@ -232,7 +232,7 @@
           <button class="tab-btn active" data-tab="animals"><i class="fa-solid fa-paw"></i> Động vật</button>
           <button class="tab-btn" data-tab="fert"><i class="fa-solid fa-flask"></i> Thức ăn</button>
           <button class="tab-btn" data-tab="harvest"><i class="fa-solid fa-basket-shopping"></i> Thu hoạch</button>
-          <button class="tab-btn" data-tab="merge"><i class="fa-solid fa-flask-vial"></i> Ghép hạt</button>
+          <button class="tab-btn" data-tab="merge"><i class="fa-solid fa-flask-vial"></i> Ghép giống</button>
           <button class="tab-btn" data-tab="protect"><i class="fa-solid fa-shield-halved"></i> Bảo hộ</button>
           <button class="tab-btn" data-tab="pet"><i class="fa-solid fa-paw"></i> Pet</button>
           <button class="tab-btn" data-tab="khung"><i class="fa-solid fa-circle-notch"></i> Khung avatar</button>
@@ -259,7 +259,7 @@
       <section id="page-kitchen" class="page">
         <div class="page-header">
           <h1><i class="fa-solid fa-utensils"></i> NHÀ BẾP</h1>
-          <p>Ghép nông sản thành món ăn - hơn 1000 thực đơn, bán lấy xu</p>
+          <p>Chế biến sản phẩm thành món ăn - hơn 1000 thực đơn, bán lấy xu</p>
         </div>
         <div class="kitchen-tabs">
           <button type="button" class="tab-btn active" data-kitchen="cook"><i class="fa-solid fa-fire-burner"></i> Nấu ăn</button>
@@ -293,7 +293,7 @@
       
       <section id="page-level" class="page">
         <div class="page-header">
-          <h1><i class="fa-solid fa-tree"></i> LEVEL &amp; BADGE CÂY</h1>
+          <h1><i class="fa-solid fa-paw"></i> LEVEL &amp; BADGE CHĂN NUÔI</h1>
         </div>
         <div class="level-badge-showcase" id="level-badge-showcase">
           <div class="level-badge-ambient" id="levelAmbientGlow"></div>
@@ -309,7 +309,7 @@
           </div>
           <div id="activePillBadge" class="eco-pill-badge tree-level-tag tier-tree-1">
             <i id="activePillIcon" class="fa-solid fa-paw"></i>
-            <span id="activePillText">LEVEL 1 • Mầm Con Trong Chậu Đất</span>
+            <span id="activePillText">LEVEL 1 • Nông Dân Tập Sự</span>
           </div>
           <div class="level-slider-block">
             <div class="level-slider-label-center">
@@ -397,19 +397,19 @@
       <section id="page-market" class="page">
         <div class="page-header">
           <h1><i class="fa-solid fa-store"></i> CHỢ NGƯỜI CHƠI</h1>
-          <p>Mua bán động vật & nông sản với người chơi khác</p>
+          <p>Mua bán động vật & sản phẩm với người chơi khác</p>
         </div>
         <div class="market-sell-box card-panel">
           <h3><i class="fa-solid fa-tags"></i> Đăng bán từ kho</h3>
           <div class="market-sell-row">
             <select id="market-kind">
               <option value="seed">Động vật</option>
-              <option value="harvest">Hoa quả · thu hoạch</option>
-              <option value="harvestBought">Hoa quả · đã mua</option>
-              <option value="harvestStar">Hoa quả · ghép sao ⭐</option>
+              <option value="harvest">Sản phẩm · thu hoạch</option>
+              <option value="harvestBought">Sản phẩm · đã mua</option>
+              <option value="harvestStar">Sản phẩm · ghép sao ⭐</option>
             </select>
             <select id="market-item"></select>
-            <input type="number" id="market-qty" min="1" placeholder="Đăng bán bao nhiêu hạt" />
+            <input type="number" id="market-qty" min="1" placeholder="Đăng bán bao nhiêu" />
             <input type="number" id="market-price" min="1" placeholder="Bao nhiêu xu / 1" />
             <button id="btn-market-list" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Đăng</button>
           </div>
@@ -516,13 +516,13 @@
 
           <div class="profile-field profile-buff-prefs">
             <label>Hình trang trí & Buff tự động</label>
-            <p class="bulk-hint">Hình = icon bay trong vườn. Buff = hiệu ứng tưới/thu. Tắt không mất thời gian gói.</p>
+            <p class="bulk-hint">Hình = icon bay trong trại. Buff = hiệu ứng tưới/thu. Tắt không mất thời gian gói.</p>
             <div class="buff-toggle-cards">
               <label class="buff-card fairy-card">
                 <span class="buff-card-icon">🧚</span>
                 <span class="buff-card-body">
                   <strong>Buff Tiên</strong>
-                  <small>Tưới & cho ăn theo cấu hình</small>
+                  <small>Chăm & cho ăn theo cấu hình</small>
                 </span>
                 <input type="checkbox" id="pref-fairy-enabled" checked class="buff-switch" />
               </label>
@@ -573,7 +573,7 @@
 
           <div class="profile-field profile-danger-zone" style="margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,80,80,0.35)">
             <label style="color:#f87171"><i class="fa-solid fa-triangle-exclamation"></i> Vùng nguy hiểm</label>
-            <p class="bulk-hint" style="margin:6px 0 12px">Xóa toàn bộ tiến trình (xu, cây, ô nâng cấp, túi đồ, NYC/Tiên…). Giữ nguyên tài khoản &amp; quyền admin nếu bạn là admin.</p>
+            <p class="bulk-hint" style="margin:6px 0 12px">Xóa toàn bộ tiến trình (xu, đàn, chuồng nâng cấp, túi đồ, NYC/Tiên…). Giữ nguyên tài khoản &amp; quyền admin nếu bạn là admin.</p>
             <button type="button" id="btn-reset-all-data" class="btn btn-danger" style="background:#dc2626;border-color:#b91c1c">
               <i class="fa-solid fa-trash-can"></i> Xóa tất cả dữ liệu &amp; làm lại
             </button>
@@ -619,7 +619,7 @@
       <h2 id="pen-title">Chi tiết chuồng</h2>
       <div id="pen-detail"></div>
       <div class="modal-actions">
-        <button id="btn-water" class="btn btn-primary"><i class="fa-solid fa-droplet"></i> Tưới nước</button>
+        <button id="btn-care" class="btn btn-primary"><i class="fa-solid fa-droplet"></i> Chăm sóc</button>
         <button id="btn-feedAction" class="btn btn-purple"><i class="fa-solid fa-flask"></i> Cho ăn</button>
         <button id="btn-harvest" class="btn btn-success"><i class="fa-solid fa-basket-shopping"></i> Thu hoạch</button>
         <button id="btn-remove" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Nhổ bỏ</button>
@@ -646,7 +646,7 @@
       <p id="visit-meta" class="visit-meta"></p>
       <div id="visit-grid" class="farm-grid visit-grid"></div>
       <div class="modal-actions">
-        <button id="btn-help-water" class="btn btn-primary"><i class="fa-solid fa-droplet"></i> Tưới giúp (+coin)</button>
+        <button id="btn-help-water" class="btn btn-primary"><i class="fa-solid fa-droplet"></i> Chăm giúp (+coin)</button>
         <button class="btn btn-secondary modal-close">Đóng</button>
       </div>
     </div>
@@ -675,14 +675,14 @@
         <label class="checkbox-row"><input type="radio" name="fairy-gender" value="male" /> Nam 🧙</label>
       </div>
 
-      <label>Áp dụng trên vườn</label>
+      <label>Áp dụng trên trại</label>
       <div id="fairy-farm-toggles" class="farm-toggle-list"></div>
       <p class="bulk-hint">Bật/tắt từng trại Tiên được phép chăm.</p>
 
-      <label>Tưới nước</label>
+      <label>Chăm sóc</label>
       <div class="nyc-mode-row">
-        <label class="checkbox-row"><input type="radio" name="fairy-water-mode" value="all" checked /> Tưới hết ô có cây</label>
-        <label class="checkbox-row"><input type="radio" name="fairy-water-mode" value="count" /> Tưới cố định số ô</label>
+        <label class="checkbox-row"><input type="radio" name="fairy-water-mode" value="all" checked /> Chăm hết chuồng có con</label>
+        <label class="checkbox-row"><input type="radio" name="fairy-water-mode" value="count" /> Chăm cố định số ô</label>
       </div>
       <input type="number" id="fairy-water-count" min="1" max="99" value="12" style="display:none" />
 
@@ -702,7 +702,7 @@
 
         <label style="margin-top:8px;display:block">Số ô bón</label>
         <div class="nyc-mode-row">
-          <label class="checkbox-row"><input type="radio" name="fairy-fert-mode" value="all" checked /> Cho ăn hết ô có cây</label>
+          <label class="checkbox-row"><input type="radio" name="fairy-fert-mode" value="all" checked /> Cho ăn hết chuồng có con</label>
           <label class="checkbox-row"><input type="radio" name="fairy-fert-mode" value="count" /> Cho ăn cố định số ô</label>
         </div>
         <input type="number" id="fairy-fert-count" min="1" max="99" value="12" style="display:none" />
@@ -735,7 +735,7 @@
         <label class="checkbox-row"><input type="radio" name="nyc-gender" value="male" /> Nam 👨‍🌾</label>
       </div>
 
-      <label>Áp dụng trên vườn</label>
+      <label>Áp dụng trên trại</label>
       <div id="nyc-farm-toggles" class="farm-toggle-list"></div>
       <p class="bulk-hint">Bật/tắt từng trại NYC được phép thu & nuôi.</p>
 
@@ -792,7 +792,7 @@
         </div>
         <button type="button" id="btn-helper-add-rule" class="btn btn-secondary btn-sm"><i class="fa-solid fa-plus"></i></button>
       </div>
-      <p class="bulk-hint" style="margin-top:8px">VD: Mốc 5, mua thêm 10 → khi còn &lt; 5 con thì mua 10 hạt.</p>
+      <p class="bulk-hint" style="margin-top:8px">VD: Mốc 5, mua thêm 10 → khi còn &lt; 5 con thì mua 10 con.</p>
       <div class="modal-actions" style="margin-top:14px">
         <button id="btn-save-helper-config" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
         <button class="btn btn-secondary modal-close">Đóng</button>

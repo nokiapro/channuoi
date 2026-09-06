@@ -3026,7 +3026,7 @@ const DEFAULT_FEEDS = [
     price: 30,
     timeReduce: 0.10,
     yieldBonus: 0,
-    desc: 'Cám cơ bản. Giảm 10% thời gian lớn.'
+    desc: 'Cám cơ bản. Giảm 10% thời gian nuôi.'
   },
   {
     id: 'cam-xanh',
@@ -3216,7 +3216,7 @@ function createDefaultPlayerData(uid, email, role) {
       raisedAt: null,
       watered: false,
       waterCount: 0,
-      lastWatered: null,
+      lastCareed: null,
       feedId: null
     })),
     inventory: {
@@ -3236,7 +3236,7 @@ function createDefaultPlayerData(uid, email, role) {
     lastDaily: null,
     collection: {},
     achievements: {},
-    helpWaterLog: {},
+    helpCareLog: {},
     maxChatStreak: 0,
     fairyUntil: 0,
     fairyConfig: {
@@ -3763,7 +3763,7 @@ function applyCriticalPlayLogToPlayer(player) {
     } else if (type === 'water' && pen.animalId) {
       pen.watered = true;
       pen.waterCount = Math.max(pen.waterCount || 0, d.waterCount || 1);
-      pen.lastWatered = d.at || e.t;
+      pen.lastCareed = d.at || e.t;
       earliest = earliest == null ? e.t : Math.min(earliest, e.t);
     } else if (type === 'fert' && pen.animalId && d.fertId) {
       if (!pen.feedId) {
@@ -3777,7 +3777,7 @@ function applyCriticalPlayLogToPlayer(player) {
         pen.raisedAt = null;
         pen.watered = false;
         pen.waterCount = 0;
-        pen.lastWatered = null;
+        pen.lastCareed = null;
         pen.feedId = null;
         pen.feedActiondAt = null;
       }
@@ -3945,7 +3945,7 @@ function mergeRemoteAdminGifts(remote) {
         raisedAt: p.raisedAt || null,
         watered: !!p.watered,
         waterCount: typeof p.waterCount === 'number' ? p.waterCount : 0,
-        lastWatered: p.lastWatered || null,
+        lastCareed: p.lastCareed || null,
         feedId: p.feedId || null,
         feedActiondAt: p.feedActiondAt || null,
         specialMult: p.specialMult,
@@ -4056,7 +4056,7 @@ async function pullRemotePlayerIfNewer() {
     
     if (rAt > lAt + 1500) {
       if (remote.sessionId && remote.sessionId !== CLIENT_SESSION_ID) {
-        // Chỉ ghi đè full khi remote tiến bộ hơn rõ — tránh mất raisedAt / tiến độ vườn
+        // Chỉ ghi đè full khi remote tiến bộ hơn rõ — tránh mất raisedAt / tiến độ trại
         // khi vừa thoát web hoặc chuyển admin rồi quay lại (sessionId luôn khác mỗi lần load)
         const lScore = playerProgressScore(currentPlayer);
         const rScore = playerProgressScore(remote);
@@ -4155,7 +4155,7 @@ async function loadPlayer(uid, email) {
     if (typeof currentPlayer.xp !== 'number') currentPlayer.xp = 0;
     if (!currentPlayer.collection) currentPlayer.collection = {};
     if (!currentPlayer.achievements) currentPlayer.achievements = {};
-    if (!currentPlayer.helpWaterLog) currentPlayer.helpWaterLog = {};
+    if (!currentPlayer.helpCareLog) currentPlayer.helpCareLog = {};
     if (typeof currentPlayer.maxChatStreak !== 'number') currentPlayer.maxChatStreak = 0;
     if (!currentPlayer.inventory.protects) currentPlayer.inventory.protects = {};
     if (!currentPlayer.inventory.animalsStar) currentPlayer.inventory.animalsStar = {};
@@ -4191,7 +4191,7 @@ async function loadPlayer(uid, email) {
     if (!Array.isArray(currentPlayer.pens)) {
       const penCount = currentSettings.penCount || 12;
       currentPlayer.pens = Array(penCount).fill(null).map((_, i) => ({
-        id: i, animalId: null, raisedAt: null, watered: false, waterCount: 0, lastWatered: null, feedId: null
+        id: i, animalId: null, raisedAt: null, watered: false, waterCount: 0, lastCareed: null, feedId: null
       }));
     }
     if (!Array.isArray(currentPlayer.pens)) {
@@ -4214,7 +4214,7 @@ async function loadPlayer(uid, email) {
       }
     } catch (_) {}
     isAdmin = currentPlayer.role === 'admin';
-    if (!currentPlayer.helpWaterLog) currentPlayer.helpWaterLog = {};
+    if (!currentPlayer.helpCareLog) currentPlayer.helpCareLog = {};
     if (typeof Game !== 'undefined' && Game.applyPendingHelps) {
       await Game.applyPendingHelps();
     }
@@ -4511,7 +4511,7 @@ function getFeed(id) {
 
 
 const DEFAULT_PETS = [
-  { id: 'pet-meo-trang', icon: '🐱', name: 'Mèo trắng', price: 800, species: 'cat', coinChance: 0.008, coinMin: 1, coinMax: 3, desc: 'Đi dạo quanh vườn. Hiếm khi nhặt được vài xu.' },
+  { id: 'pet-meo-trang', icon: '🐱', name: 'Mèo trắng', price: 800, species: 'cat', coinChance: 0.008, coinMin: 1, coinMax: 3, desc: 'Đi dạo quanh trại. Hiếm khi nhặt được vài xu.' },
   { id: 'pet-meo-den', icon: '🐈‍⬛', name: 'Mèo đen', price: 1200, species: 'cat', coinChance: 0.01, coinMin: 1, coinMax: 4, desc: 'May mắn hơn một chút khi nhặt xu.' },
   { id: 'pet-cho-vang', icon: '🐶', name: 'Chó vàng', price: 900, species: 'dog', coinChance: 0.009, coinMin: 1, coinMax: 3, desc: 'Chạy quanh hàng rào, thỉnh thoảng nhặt xu.' },
   { id: 'pet-cho-shiba', icon: '🐕', name: 'Shiba', price: 1500, species: 'dog', coinChance: 0.012, coinMin: 1, coinMax: 5, desc: 'Shiba tinh anh — tỉ lệ nhặt xu hơi cao hơn.' },
@@ -4830,7 +4830,7 @@ const DEFAULT_AVATAR_FRAMES = [
   { id: 'af-sky', name: 'Bầu Trời', price: 700, rarity: 'common', desc: 'Xanh trời trong', gradient: 'linear-gradient(135deg,#0ea5e9,#38bdf8,#7dd3fc)' },
   { id: 'af-ocean', name: 'Đại Dương', price: 900, rarity: 'common', desc: 'Sóng xanh sâu', gradient: 'linear-gradient(135deg,#0369a1,#0ea5e9,#22d3ee)' },
   { id: 'af-lime', name: 'Chanh Vàng', price: 550, rarity: 'common', desc: 'Xanh chanh tươi', gradient: 'linear-gradient(135deg,#65a30d,#a3e635,#bef264)' },
-  { id: 'af-leaf', name: 'Lá Non', price: 650, rarity: 'common', desc: 'Xanh lá vườn', gradient: 'linear-gradient(135deg,#15803d,#22c55e,#86efac)' },
+  { id: 'af-leaf', name: 'Lá Non', price: 650, rarity: 'common', desc: 'Xanh đồng cỏ', gradient: 'linear-gradient(135deg,#15803d,#22c55e,#86efac)' },
   { id: 'af-sand', name: 'Cát Vàng', price: 800, rarity: 'common', desc: 'Cát nắng', gradient: 'linear-gradient(135deg,#ca8a04,#eab308,#fde047)' },
   { id: 'af-coral', name: 'San Hô', price: 850, rarity: 'common', desc: 'Cam san hô', gradient: 'linear-gradient(135deg,#f97316,#fb923c,#fdba74)' },
   { id: 'af-rose', name: 'Hồng Nhẹ', price: 750, rarity: 'common', desc: 'Hồng pastel', gradient: 'linear-gradient(135deg,#fb7185,#fda4af,#fecdd3)' },

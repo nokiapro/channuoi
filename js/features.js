@@ -127,7 +127,7 @@ const Features = {
     }
 
     if (typeof Game !== 'undefined' && Game.addActivity) {
-      Game.addActivity('Nâng ' + jobs.length + ' ô (mọi vườn) → x' + tgt + ' vĩnh viễn (-' + totalCost.toLocaleString() + '🪙)');
+      Game.addActivity('Nâng ' + jobs.length + ' ô (mọi trại) → x' + tgt + ' vĩnh viễn (-' + totalCost.toLocaleString() + '🪙)');
     }
     await savePlayer();
     if (typeof updateCoins === 'function') updateCoins();
@@ -197,13 +197,13 @@ const Features = {
 
   
   DAILY_QUEST_DEFS: [
-    { id: 'd_plant', title: 'Nuôi 5 cây', type: 'animal', target: 5, reward: 80, xp: 10 },
-    { id: 'd_water', title: 'Tưới 10 lần', type: 'water', target: 10, reward: 60, xp: 8 },
+    { id: 'd_raise', title: 'Nuôi 5 con', type: 'animal', target: 5, reward: 80, xp: 10 },
+    { id: 'd_water', title: 'Chăm 10 lần', type: 'water', target: 10, reward: 60, xp: 8 },
     { id: 'd_harvest', title: 'Thu hoạch 8 ô', type: 'harvest', target: 8, reward: 100, xp: 12 },
     { id: 'd_buy', title: 'Mua 3 động vật', type: 'buySeed', target: 3, reward: 50, xp: 6 }
   ],
   WEEKLY_QUEST_DEFS: [
-    { id: 'w_plant', title: 'Nuôi 40 con trong tuần', type: 'animal', target: 40, reward: 500, xp: 50 },
+    { id: 'w_raise', title: 'Nuôi 40 con trong tuần', type: 'animal', target: 40, reward: 500, xp: 50 },
     { id: 'w_harvest', title: 'Thu 50 ô trong tuần', type: 'harvest', target: 50, reward: 600, xp: 60 },
     { id: 'w_earn', title: 'Kiếm 2000 xu từ bán', type: 'earn', target: 2000, reward: 400, xp: 40 },
     { id: 'w_market', title: 'Giao dịch chợ 3 lần', type: 'market', target: 3, reward: 350, xp: 35 }
@@ -445,7 +445,7 @@ const Features = {
       for (let i = 0; i < pensAdd; i++) {
         currentPlayer.pens.push({
           id: currentPlayer.pens.length, animalId: null, raisedAt: null,
-          watered: false, waterCount: 0, lastWatered: null, feedId: null, feedActiondAt: null
+          watered: false, waterCount: 0, lastCareed: null, feedId: null, feedActiondAt: null
         });
       }
       parts.push('+' + pensAdd + ' chuồng');
@@ -575,7 +575,7 @@ const Features = {
     }
 
     currentPlayer.coins -= cost;
-    // Con → kho hạt; nông sản (mọi loại) → harvestBought (đã mua từ chợ)
+    // Con → kho giống; sản phẩm (mọi loại) → harvestBought (đã mua từ chợ)
     if (L.kind === 'seed' || L.kind === 'animalStar') {
       const bagKey = L.kind === 'animalStar' ? 'animalsStar' : 'animals';
       if (!currentPlayer.inventory[bagKey]) currentPlayer.inventory[bagKey] = {};
@@ -769,7 +769,7 @@ const Features = {
 
   
   async buySpecialPen() {
-    return { ok: false, msg: 'Đã chuyển sang nâng cấp ô trong vườn!' };
+    return { ok: false, msg: 'Đã chuyển sang nâng cấp chuồng trong trại!' };
   },
 
   

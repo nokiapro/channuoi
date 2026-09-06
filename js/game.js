@@ -106,7 +106,7 @@ const Game = {
   getSettings() { return currentSettings; },
 
   
-  MAX_PLOTS_PER_GARDEN: 99,
+  MAX_PENS_PER_FARM: 99,
 
   makeEmptyPens(count) {
     const n = Math.max(1, count || (currentSettings && currentSettings.penCount) || 4);
@@ -116,7 +116,7 @@ const Game = {
       raisedAt: null,
       watered: false,
       waterCount: 0,
-      lastWatered: null,
+      lastCareed: null,
       feedId: null
     }));
   },
@@ -189,7 +189,7 @@ const Game = {
             }
             return {
               id: idx, animalId: null, raisedAt: null, watered: false,
-              waterCount: 0, lastWatered: null, feedId: null
+              waterCount: 0, lastCareed: null, feedId: null
             };
           });
         } else {
@@ -217,8 +217,8 @@ const Game = {
         if (p.raisedAt != null) {
           p.raisedAt = this.toMs(p.raisedAt);
         }
-        if (p.lastWatered != null) {
-          p.lastWatered = this.toMs(p.lastWatered);
+        if (p.lastCareed != null) {
+          p.lastCareed = this.toMs(p.lastCareed);
         }
         if (p.feedActiondAt != null) {
           p.feedActiondAt = this.toMs(p.feedActiondAt);
@@ -266,7 +266,7 @@ const Game = {
   
   refreshFarmUnlocks() {
     if (!currentPlayer || !Array.isArray(currentPlayer.farms)) return;
-    const max = this.MAX_PLOTS_PER_GARDEN;
+    const max = this.MAX_PENS_PER_FARM;
     let guard = 0;
     while (guard++ < 30) {
       const last = currentPlayer.farms[currentPlayer.farms.length - 1];
@@ -533,7 +533,7 @@ const Game = {
     };
     currentPlayer.nycConfig = next;
     const label = gIdx !== null ? ('Trại ' + (Number(gIdx) + 1) + ' · ') : '';
-    return { ok: true, msg: 'Đã lưu NYC · ' + label + (slice.animalId || 'chưa chọn hạt') };
+    return { ok: true, msg: 'Đã lưu NYC · ' + label + (slice.animalId || 'chưa chọn giống') };
   },
 
   
@@ -674,7 +674,7 @@ const Game = {
           if (fairyHere) {
             pen.watered = true;
             pen.waterCount = 3;
-            pen.lastWatered = now;
+            pen.lastCareed = now;
             wateredN++;
           }
         });
@@ -709,12 +709,12 @@ const Game = {
       }
       
       let actMsg = fairyOn
-        ? `Mưa · ${fairyEmoji} ${fairyName} tưới khi mưa: ${wateredN} ô`
+        ? `Mưa · ${fairyEmoji} ${fairyName} chăm khi mưa: ${wateredN} ô`
         : `Mưa bắt đầu (${Math.round(durationMs / 1000)}s)`;
       if (autoCollectN > 0) {
         actMsg += ` · nhặt ${autoCollectN} vật phẩm`;
         if (autoCoins) actMsg += ` (+${autoCoins}🪙)`;
-        if (autoSeeds) actMsg += ` (+${autoSeeds} hạt)`;
+        if (autoSeeds) actMsg += ` (+${autoSeeds} con)`;
       }
       this.addActivity(actMsg, { type: fairyOn ? 'fairy_rain' : 'rain', at: now });
       if (fairyOn && wateredN > 0 && typeof Features !== 'undefined' && Features.trackQuest) {
@@ -731,7 +731,7 @@ const Game = {
     }
     if (typeof showRainEffect === 'function') showRainEffect();
     let tip = fairyOn
-      ? `🌧️ Mưa + ${fairyEmoji} ${fairyName} tưới ${wateredN} ô!`
+      ? `🌧️ Mưa + ${fairyEmoji} ${fairyName} chăm ${wateredN} ô!`
       : '🌧️ Mưa rồi! Chạm sâu / con rơi để nhặt thưởng!';
     if (autoCollectN > 0) tip += ` Nhặt ${autoCollectN} vật phẩm.`;
     if (typeof showToast === 'function') showToast(tip, 'success');
@@ -790,7 +790,7 @@ const Game = {
           animalId: p.animalId || null,
           raisedAt: p.raisedAt || null,
           waterCount: p.waterCount || 0,
-          lastWatered: p.lastWatered || null,
+          lastCareed: p.lastCareed || null,
           feedId: p.feedId || null,
           feedActiondAt: p.feedActiondAt || null
         }));
@@ -811,13 +811,13 @@ const Game = {
 
 
 
-  async helpWaterFriend(friendUid) {
+  async helpCareFriend(friendUid) {
     if (!currentUser || !currentPlayer) return { ok: false, msg: 'Chưa đăng nhập!' };
     if (!friendUid || friendUid === currentUser.uid) return { ok: false, msg: 'Không hợp lệ!' };
     const today = (typeof gameDateString === 'function') ? gameDateString() : new Date().toDateString();
-    if (!currentPlayer.helpWaterLog) currentPlayer.helpWaterLog = {};
-    if (currentPlayer.helpWaterLog[friendUid] === today) {
-      return { ok: false, msg: 'Hôm nay bạn đã tưới giúp người này rồi!' };
+    if (!currentPlayer.helpCareLog) currentPlayer.helpCareLog = {};
+    if (currentPlayer.helpCareLog[friendUid] === today) {
+      return { ok: false, msg: 'Hôm nay bạn đã chăm giúp người này rồi!' };
     }
     try {
       await db.ref('farmHelps/' + friendUid + '/' + currentUser.uid).set({
@@ -827,20 +827,20 @@ const Game = {
         day: today
       });
     } catch (e) {
-      return { ok: false, msg: 'Lỗi gửi tưới giúp (cập nhật Firebase Rules?). ' + (e.message || '') };
+      return { ok: false, msg: 'Lỗi gửi chăm giúp (cập nhật Firebase Rules?). ' + (e.message || '') };
     }
-    currentPlayer.helpWaterLog[friendUid] = today;
+    currentPlayer.helpCareLog[friendUid] = today;
     currentPlayer.helpedFriendOnce = true;
     const coins = 12;
     const xp = 3;
     currentPlayer.coins = (currentPlayer.coins || 0) + coins;
     this.addXp(xp);
-    this.addActivity(`Tưới giúp bạn +${coins}🪙 +${xp} XP`);
+    this.addActivity(`Chăm giúp bạn +${coins}🪙 +${xp} XP`);
     const ach = this.checkAchievements();
     await savePlayer();
     this.notifyAchievements(ach);
     if (typeof updateCoins === 'function') updateCoins();
-    return { ok: true, msg: `Đã tưới giúp! +${coins}🪙 +${xp} XP` };
+    return { ok: true, msg: `Đã chăm giúp! +${coins}🪙 +${xp} XP` };
   },
 
   
@@ -861,16 +861,16 @@ const Game = {
         if (pen) {
           pen.waterCount = (pen.waterCount || 0) + 1;
           pen.watered = true;
-          pen.lastWatered = (typeof nowMs==="function"?nowMs():Date.now());
+          pen.lastCareed = (typeof nowMs==="function"?nowMs():Date.now());
           applied++;
           if (h.fromName) names.push(h.fromName);
         }
         await db.ref('farmHelps/' + currentUser.uid + '/' + fromUid).remove();
       }
       if (applied > 0) {
-        this.addActivity(`Nhận ${applied} lượt tưới giúp` + (names.length ? ` từ ${names.slice(0, 3).join(', ')}` : ''));
+        this.addActivity(`Nhận ${applied} lượt chăm giúp` + (names.length ? ` từ ${names.slice(0, 3).join(', ')}` : ''));
         if (typeof showToast === 'function') {
-          showToast(`💧 Bạn bè đã tưới giúp ${applied} ô!`, 'success');
+          showToast(`💧 Bạn bè đã chăm giúp ${applied} ô!`, 'success');
         }
       }
     } catch (e) {
@@ -1069,7 +1069,7 @@ const Game = {
       { id: 'first_raise', name: 'Người chăn nuôi', desc: 'Nuôi động vật lần đầu', icon: '🥚', check: p => (p.stats && p.stats.raised) >= 1, reward: { coins: 30, xp: 5 } },
       { id: 'first_harvest', name: 'Mùa màng đầu', desc: 'Thu hoạch lần đầu', icon: '🧺', check: p => (p.stats && p.stats.harvested) >= 1, reward: { coins: 50, xp: 8 } },
       { id: 'harvest_50', name: 'Nông dân chăm chỉ', desc: 'Thu hoạch tổng 50 sản phẩm', icon: '🌾', check: p => (p.stats && p.stats.harvested) >= 50, reward: { coins: 120, xp: 15 } },
-      { id: 'harvest_200', name: 'Đại gia nông sản', desc: 'Thu hoạch tổng 200 sản phẩm', icon: '🏆', check: p => (p.stats && p.stats.harvested) >= 200, reward: { coins: 400, xp: 40 } },
+      { id: 'harvest_200', name: 'Đại gia sản phẩm', desc: 'Thu hoạch tổng 200 sản phẩm', icon: '🏆', check: p => (p.stats && p.stats.harvested) >= 200, reward: { coins: 400, xp: 40 } },
       { id: 'full_farm', name: 'Trại ken đặc', desc: 'Có ít nhất 12 ô đang nuôi', icon: '🌳', check: p => (p.pens || []).filter(x => x && x.animalId).length >= 12, reward: { coins: 100, xp: 12 } },
       { id: 'level_5', name: 'Tài năng trại', desc: 'Đạt cấp 5', icon: '⭐', check: p => (p.level || 1) >= 5, reward: { coins: 150, xp: 0 } },
       { id: 'level_10', name: 'Bậc thầy trại', desc: 'Đạt cấp 10', icon: '🌟', check: p => (p.level || 1) >= 10, reward: { coins: 400, xp: 0 } },
@@ -1078,7 +1078,7 @@ const Game = {
       { id: 'collect_100', name: 'Bách khoa thực vật', desc: 'Mở khóa 100 loại', icon: '🏅', check: p => Object.keys(p.collection || {}).length >= 100, reward: { coins: 800, xp: 80 } },
       { id: 'chat_streak_3', name: 'Bạn thân', desc: 'Chat streak 3 ngày với một người', icon: '💬', check: p => (p.maxChatStreak || 0) >= 3, reward: { coins: 60, xp: 8 } },
       { id: 'chat_streak_7', name: 'Gắn bó tuần', desc: 'Chat streak 7 ngày', icon: '🔥', check: p => (p.maxChatStreak || 0) >= 7, reward: { coins: 200, xp: 20 } },
-      { id: 'help_friend', name: 'Hàng xóm tốt', desc: 'Tưới giúp bạn bè 1 lần', icon: '💧', check: p => !!p.helpedFriendOnce, reward: { coins: 40, xp: 5 } },
+      { id: 'help_friend', name: 'Hàng xóm tốt', desc: 'Chăm giúp bạn bè 1 lần', icon: '💧', check: p => !!p.helpedFriendOnce, reward: { coins: 40, xp: 5 } },
       { id: 'rain_play', name: 'Đùa với mưa', desc: 'Nhặt vật phẩm khi mưa', icon: '🌧️', check: p => !!p.rainedCollectOnce, reward: { coins: 40, xp: 5 } },
       { id: 'rich_5k', name: 'Túi tiền đầy', desc: 'Sở hữu ít nhất 5000 coin', icon: '💰', check: p => (p.coins || 0) >= 5000, reward: { coins: 100, xp: 10 } }
     ];
@@ -1122,7 +1122,7 @@ const Game = {
     if (!currentPlayer) return { ok: false, msg: 'Chưa đăng nhập!' };
     if (this._buyLock) return { ok: false, msg: 'Đang xử lý mua hàng…' };
     const animal = this.getAnimal(animalId);
-    if (!animal) return { ok: false, msg: 'Không tìm thấy cây!' };
+    if (!animal) return { ok: false, msg: 'Không tìm thấy động vật!' };
     if (!this.isAnimalAvailable(animal)) {
       return { ok: false, msg: 'Con Limited — ngoài thời gian sự kiện!' };
     }
@@ -1197,7 +1197,7 @@ const Game = {
     if (!currentPlayer) return { ok: false, msg: 'Chưa đăng nhập!' };
     const pen = currentPlayer.pens[plotId];
     if (!pen) return { ok: false, msg: 'Chuồng không tồn tại!' };
-    if (pen.animalId) return { ok: false, msg: 'Chuồng đã có cây!' };
+    if (pen.animalId) return { ok: false, msg: 'Chuồng đã có con!' };
     const unlimited = this.isUnlimitedResources();
     if (!currentPlayer.inventory.animalsMyth) currentPlayer.inventory.animalsMyth = {};
     const normal = (currentPlayer.inventory.animals && currentPlayer.inventory.animals[animalId]) || 0;
@@ -1247,7 +1247,7 @@ const Game = {
     pen.raisedAt = (typeof nowMs==="function"?nowMs():Date.now());
     pen.watered = false;
     pen.waterCount = 0;
-    pen.lastWatered = null;
+    pen.lastCareed = null;
     pen.feedId = null;
     pen.feedActiondAt = null;
     pen.animalStar = usedStar || usedMyth;
@@ -1257,18 +1257,18 @@ const Game = {
       pen.baseRaiseTime = (anDef && Number(anDef.raiseTime) > 0) ? Number(anDef.raiseTime) : (Number(pen.baseRaiseTime) || 0);
     }
     
-    let fairyWatered = false;
+    let fairyCareed = false;
     if (this.isFairyActive() && (pen.waterCount || 0) < 3) {
       pen.waterCount = 3;
       pen.watered = true;
-      pen.lastWatered = (typeof nowMs==="function"?nowMs():Date.now());
-      fairyWatered = true;
+      pen.lastCareed = (typeof nowMs==="function"?nowMs():Date.now());
+      fairyCareed = true;
       if (typeof Features !== 'undefined' && Features.trackQuest) Features.trackQuest('water', 3);
     }
     currentPlayer.stats.raised = (currentPlayer.stats.raised || 0) + 1;
     const animal = this.getAnimal(animalId);
     const _pTag = usedMyth ? '✨ ' : (usedStar ? '⭐ ' : '');
-    this.addActivity(`Nuôi ${_pTag}${animal.name} vào ô #${plotId + 1}` + (fairyWatered ? ' · Tiên tưới ngay' : ''));
+    this.addActivity(`Nuôi ${_pTag}${animal.name} vào ô #${plotId + 1}` + (fairyCareed ? ' · Tiên chăm ngay' : ''));
     if (typeof Features !== 'undefined') Features.trackQuest('animal', 1);
     if (typeof recordGameEvent === 'function') {
       recordGameEvent('animal', {
@@ -1284,7 +1284,7 @@ const Game = {
     const ach = this.checkAchievements();
     await savePlayer({ action: 'animal' });
     this.notifyAchievements(ach);
-    return { ok: true, msg: `Đã nuôi ${usedMyth ? '✨ ' : (usedStar ? '⭐ ' : '')}${animal.name}!` + (fairyWatered ? ' 🧚 Tiên đã tưới.' : '') };
+    return { ok: true, msg: `Đã nuôi ${usedMyth ? '✨ ' : (usedStar ? '⭐ ' : '')}${animal.name}!` + (fairyCareed ? ' 🧚 Tiên đã tưới.' : '') };
   },
 
   
@@ -1310,7 +1310,7 @@ const Game = {
     const at = typeof sharedAt === 'number' ? sharedAt : (typeof nowMs==="function"?nowMs():Date.now());
     const fairyOn = this.isFairyActive();
     let raisedCount = 0;
-    let fairyWateredN = 0;
+    let fairyCareedN = 0;
     for (let i = 0; i < n; i++) {
       const penId = empty[i];
       const pen = currentPlayer.pens[plotId];
@@ -1357,7 +1357,7 @@ const Game = {
       pen.raisedAt = at; 
       pen.watered = false;
       pen.waterCount = 0;
-      pen.lastWatered = null;
+      pen.lastCareed = null;
       pen.feedId = null;
       pen.feedActiondAt = null;
       pen.animalStar = usedStar || usedMyth;
@@ -1369,8 +1369,8 @@ const Game = {
       if (fairyOn) {
         pen.waterCount = 3;
         pen.watered = true;
-        pen.lastWatered = at;
-        fairyWateredN++;
+        pen.lastCareed = at;
+        fairyCareedN++;
       }
       raisedCount++;
       currentPlayer.stats.raised = (currentPlayer.stats.raised || 0) + 1;
@@ -1378,9 +1378,9 @@ const Game = {
     if (raisedCount > 0) {
       if (typeof Features !== 'undefined' && Features.trackQuest) {
         Features.trackQuest('animal', raisedCount);
-        if (fairyWateredN > 0) Features.trackQuest('water', fairyWateredN * 3);
+        if (fairyCareedN > 0) Features.trackQuest('water', fairyCareedN * 3);
       }
-      this.addActivity(`Nuôi ${raisedCount} ô ${animal.name}` + (fairyWateredN ? ` · Tiên tưới ${fairyWateredN} ô` : '') + ' (đồng bộ giờ)');
+      this.addActivity(`Nuôi ${raisedCount} ô ${animal.name}` + (fairyCareedN ? ` · Tiên chăm ${fairyCareedN} ô` : '') + ' (đồng bộ giờ)');
       const ach = this.checkAchievements();
       await savePlayer();
       this.notifyAchievements(ach);
@@ -1394,12 +1394,12 @@ const Game = {
     if (!pen || !pen.animalId) return { ok: false, msg: 'Không có con để tưới!' };
     if (this.isReady(pen)) return { ok: false, msg: 'Con đã chín rồi!' };
     const count = pen.waterCount || 0;
-    if (count >= 3) return { ok: false, msg: 'Đã tưới tối đa 3 lần!' };
+    if (count >= 3) return { ok: false, msg: 'Đã chăm tối đa 3 lần!' };
     
     pen.watered = true;
     pen.waterCount = count + 1;
-    pen.lastWatered = (typeof nowMs==="function"?nowMs():Date.now());
-    this.addActivity(`Tưới nước ô #${plotId + 1} (${pen.waterCount}/3)`);
+    pen.lastCareed = (typeof nowMs==="function"?nowMs():Date.now());
+    this.addActivity(`Chăm sóc ô #${plotId + 1} (${pen.waterCount}/3)`);
     if (typeof Features !== 'undefined') Features.trackQuest('water', 1);
     if (typeof recordGameEvent === 'function') {
       recordGameEvent('water', {
@@ -1407,7 +1407,7 @@ const Game = {
         farmIndex: currentPlayer.activeFarm || 0,
         animalId: pen.animalId,
         waterCount: pen.waterCount,
-        at: pen.lastWatered
+        at: pen.lastCareed
       });
     }
     await savePlayer({ action: 'water' });
@@ -1418,7 +1418,7 @@ const Game = {
   async applyFeed(plotId, fertId) {
     if (!currentPlayer) return { ok: false, msg: 'Chưa đăng nhập!' };
     const pen = currentPlayer.pens[plotId];
-    if (!pen || !pen.animalId) return { ok: false, msg: 'Không có cây!' };
+    if (!pen || !pen.animalId) return { ok: false, msg: 'Không có con!' };
     if (this.isReady(pen)) return { ok: false, msg: 'Con đã chín rồi!' };
     if (pen.feedId) return { ok: false, msg: 'Ô này đã cho ăn cám rồi!' };
     const have = (currentPlayer.inventory.feeds && currentPlayer.inventory.feeds[fertId]) || 0;
@@ -1455,19 +1455,19 @@ const Game = {
         while ((pen.waterCount || 0) < 3) {
           pen.watered = true;
           pen.waterCount = (pen.waterCount || 0) + 1;
-          pen.lastWatered = (typeof nowMs==="function"?nowMs():Date.now());
+          pen.lastCareed = (typeof nowMs==="function"?nowMs():Date.now());
           actions++;
         }
         pensDone++;
       }
     }
     if (actions > 0) {
-      this.addActivity(`Tưới đủ ${pensDone} ô (${actions} lần)`);
+      this.addActivity(`Chăm đủ ${pensDone} ô (${actions} lần)`);
       if (typeof Features !== 'undefined' && Features.trackQuest) Features.trackQuest('water', actions);
       await savePlayer();
       this.checkAchievements();
     }
-    return { ok: true, msg: actions > 0 ? `Đã tưới đủ 3 lần cho ${pensDone} ô!` : 'Không có ô nào cần tưới.' };
+    return { ok: true, msg: actions > 0 ? `Đã chăm đủ 3 lần cho ${pensDone} ô!` : 'Không có ô nào cần tưới.' };
   },
 
   
@@ -1512,9 +1512,9 @@ const Game = {
   BOOST_PREVIEW_MS: 10 * 1000,
 
   
-  getWaterBoostRemainingMs(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
-    if (!pen || !(pen.waterCount > 0) || !pen.lastWatered) return 0;
-    return Math.max(0, (pen.lastWatered + this.BOOST_MS) - now);
+  getCareBoostRemainingMs(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
+    if (!pen || !(pen.waterCount > 0) || !pen.lastCareed) return 0;
+    return Math.max(0, (pen.lastCareed + this.BOOST_MS) - now);
   },
 
   
@@ -1524,8 +1524,8 @@ const Game = {
   },
 
   
-  isWaterBoostActive(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
-    return this.getWaterBoostRemainingMs(pen, now) > 0;
+  isCareBoostActive(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
+    return this.getCareBoostRemainingMs(pen, now) > 0;
   },
 
   
@@ -1538,14 +1538,14 @@ const Game = {
 
 
 
-  getWaterDisplayState(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
-    const rem = this.getWaterBoostRemainingMs(pen, now);
+  getCareDisplayState(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
+    const rem = this.getCareBoostRemainingMs(pen, now);
     if (rem <= 0 || rem <= this.BOOST_PREVIEW_MS) {
       return {
         active: false,
         nearExpiry: rem > 0 && rem <= this.BOOST_PREVIEW_MS,
         remainingMs: rem,
-        text: 'Chưa tưới nước',
+        text: 'Chưa chăm sóc',
         short: '0/3'
       };
     }
@@ -1591,7 +1591,7 @@ const Game = {
     if (!pen) return null;
     const now = (typeof nowMs==="function"?nowMs():Date.now());
     let ends = [];
-    const w = this.getWaterBoostRemainingMs(pen, now);
+    const w = this.getCareBoostRemainingMs(pen, now);
     if (w > 0) ends.push(now + w);
     const f = this.getFertBoostRemainingMs(pen, now);
     if (f > 0) ends.push(now + f);
@@ -1781,7 +1781,7 @@ const Game = {
     currentPlayer.fairyConfig = next;
     const parts = [];
     if (gIdx !== null) parts.push('Trại ' + (Number(gIdx) + 1));
-    parts.push(careSlice.waterMode === 'all' ? 'tưới hết ô' : `tưới ${careSlice.waterCount} ô`);
+    parts.push(careSlice.waterMode === 'all' ? 'chăm hết ô' : `chăm ${careSlice.waterCount} ô`);
     if (careSlice.useFeed) {
       const src = careSlice.fertSource === 'specific'
         ? ((this.getFeed(careSlice.fertId) || {}).name || careSlice.fertId)
@@ -1846,15 +1846,15 @@ const Game = {
     const cfg = this.getFairyConfigForFarm(gi);
 
     
-    let needWater = pens.filter(p => p && p.animalId);
+    let needCare = pens.filter(p => p && p.animalId);
     if (cfg.waterMode === 'count') {
-      needWater = needWater.slice(0, Math.max(1, Number(cfg.waterCount) || 12));
+      needCare = needCare.slice(0, Math.max(1, Number(cfg.waterCount) || 12));
     }
-    for (let i = 0; i < needWater.length; i++) {
-      const pen = needWater[i];
+    for (let i = 0; i < needCare.length; i++) {
+      const pen = needCare[i];
       pen.waterCount = 3;
       pen.watered = true;
-      pen.lastWatered = now;
+      pen.lastCareed = now;
       wateredN++;
     }
 
@@ -1892,7 +1892,7 @@ const Game = {
     if (wateredN > 0 || fertN > 0 || (cfg.useFeed && needFertN > 0)) {
       const emoji = this.getFairyEmoji ? this.getFairyEmoji() : '🧚';
       const name = this.getFairyDisplayName ? this.getFairyDisplayName() : 'Tiên';
-      let msg = `${emoji} ${name} chăm: tưới ${wateredN} ô`;
+      let msg = `${emoji} ${name} chăm: chăm ${wateredN} ô`;
       if (cfg.useFeed) {
         if (fertN > 0) {
           msg += `, cho ăn ${fertN} ô`;
@@ -1926,7 +1926,7 @@ const Game = {
 
 
 
-  fairyEnsureWatered(now = (typeof nowMs==="function"?nowMs():Date.now())) {
+  fairyEnsureCareed(now = (typeof nowMs==="function"?nowMs():Date.now())) {
     if (!this.isFairyActive() || !currentPlayer || !currentPlayer.pens) return false;
     const pens = Array.isArray(currentPlayer.pens)
       ? currentPlayer.pens
@@ -1937,13 +1937,13 @@ const Game = {
       if (!pen || !pen.animalId) return;
       
       const count = pen.waterCount || 0;
-      const expired = !this.isWaterBoostActive(pen, now);
+      const expired = !this.isCareBoostActive(pen, now);
       const missing = count < 3;
-      const never = count <= 0 || !pen.lastWatered;
+      const never = count <= 0 || !pen.lastCareed;
       if (!expired && !missing && !never) return;
       pen.waterCount = 3;
       pen.watered = true;
-      pen.lastWatered = now;
+      pen.lastCareed = now;
       n++;
     });
     if (n > 0 && typeof Features !== 'undefined' && Features.trackQuest) {
@@ -2002,15 +2002,15 @@ const Game = {
     this.forEachFarm((pens, gi) => {
       const fairyHere = fairy && this.isFairyFarmEnabled(gi);
       if (fairyHere) {
-        if (this.fairyEnsureWatered(now)) changed = true;
+        if (this.fairyEnsureCareed(now)) changed = true;
         if (this.fairyEnsureFed(now)) changed = true;
       } else {
         pens.forEach(pen => {
           if (!pen) return;
-          if ((pen.waterCount || 0) > 0 && pen.lastWatered && !this.isWaterBoostActive(pen, now)) {
+          if ((pen.waterCount || 0) > 0 && pen.lastCareed && !this.isCareBoostActive(pen, now)) {
             pen.waterCount = 0;
             pen.watered = false;
-            pen.lastWatered = null;
+            pen.lastCareed = null;
             changed = true;
           }
           if (pen.feedId && pen.feedActiondAt && !this.isFertBoostActive(pen, now)) {
@@ -2122,7 +2122,7 @@ const Game = {
         if (fairyHere) {
           pen.waterCount = 3;
           pen.watered = true;
-          pen.lastWatered = t;
+          pen.lastCareed = t;
           watered++;
         }
       });
@@ -2165,7 +2165,7 @@ const Game = {
 
 
 
-  _nycHarvestOneAt(pen, t, gi, cfg, doReplant, silent, force) {
+  _nycHarvestOneAt(pen, t, gi, cfg, doReRaise, silent, force) {
     if (!pen || !pen.animalId || !pen.raisedAt) return { harvested: 0, raised: 0, amount: 0, animalName: '', animalId: null, animalStar: false };
     if (!force && !this.isReadyAt(pen, t)) return { harvested: 0, raised: 0, amount: 0, animalName: '', animalId: null, animalStar: false };
     const animal = this.getAnimal(pen.animalId);
@@ -2191,14 +2191,14 @@ const Game = {
     pen.raisedAt = null;
     pen.watered = false;
     pen.waterCount = 0;
-    pen.lastWatered = null;
+    pen.lastCareed = null;
     pen.feedId = null;
     pen.feedActiondAt = null;
     pen.animalStar = false;
     pen.seedMyth = false;
     let raisedCount = 0;
     let reRaiseName = '';
-    if (doReplant && cfg && cfg.animalId) {
+    if (doReRaise && cfg && cfg.animalId) {
       if (this._nycAnimalOneAt(pen, cfg, t, gi)) {
         raisedCount = 1;
         const rp = this.getAnimal(cfg.animalId);
@@ -2317,7 +2317,7 @@ const Game = {
     let fairyCycles = 0;
     let helperBuys = 0;
     let rainHits = 0;
-    let rainWatered = 0;
+    let rainCareed = 0;
     let rainCollected = 0;
     let rainCollectCoins = 0;
     let rainCollectSeeds = 0;
@@ -2435,7 +2435,7 @@ const Game = {
           if (!pen || !pen.animalId) return;
           pen.waterCount = 3;
           pen.watered = true;
-          pen.lastWatered = from;
+          pen.lastCareed = from;
         });
         
         const fcfg = this.getFairyConfigForFarm
@@ -2526,7 +2526,7 @@ const Game = {
     
     const nycHarvestReraiseAt = (t) => {
       if (!nycBuffOn) return;
-      const canReplant = this.isNycActiveAt(t) || this.isNycActive();
+      const canReRaise = this.isNycActiveAt(t) || this.isNycActive();
       for (let gi = 0; gi < currentPlayer.farms.length; gi++) {
         if (!this.isNycFarmEnabled(gi)) continue;
         const cfg = this.getNycConfigForFarm(gi) || {};
@@ -2544,13 +2544,13 @@ const Game = {
         for (let i = 0; i < pens.length; i++) {
           const pen = pens[i];
           if (!pen || !pen.animalId) continue;
-          // Ép permanent + tưới trước khi tính ready (khớp x50 offline)
+          // Ép permanent + chăm trước khi tính ready (khớp x50 offline)
           const perm = Number(pen.specialMultPermanent) || 0;
           if (perm >= 2) pen.specialMult = Math.max(Number(pen.specialMult) || 1, perm);
           if ((pen.waterCount || 0) < 3) {
             pen.waterCount = 3;
             pen.watered = true;
-            if (!pen.lastWatered) pen.lastWatered = t;
+            if (!pen.lastCareed) pen.lastCareed = t;
           }
           if (!(Number(pen.baseRaiseTime) > 0)) {
             const anDef = this.getAnimal(pen.animalId);
@@ -2565,19 +2565,19 @@ const Game = {
 
           const growSec = this.getEffectiveRaiseTime(pen, t);
           // force=true để không bỏ sót khi isReadyAt lệch nhẹ
-          const r = this._nycHarvestOneAt(pen, t, gi, cfg, canReplant && !!cfg.animalId, true, true);
+          const r = this._nycHarvestOneAt(pen, t, gi, cfg, canReRaise && !!cfg.animalId, true, true);
           if (r && r.harvested) {
             recordHarvestStat(r, gi + ':' + i, growSec);
-            // Sau reRaise: ép tưới để vòng sau tính đúng growSec ngắn
+            // Sau reRaise: ép chăm để vòng sau tính đúng growSec ngắn
             if (pen.animalId) {
               pen.waterCount = 3;
               pen.watered = true;
-              pen.lastWatered = t;
+              pen.lastCareed = t;
               if (perm >= 2) pen.specialMult = Math.max(Number(pen.specialMult) || 1, perm);
             }
           }
         }
-        if (canReplant && cfg && cfg.animalId) {
+        if (canReRaise && cfg && cfg.animalId) {
           const extra = this._nycAnimalEmptiesAt(pens, cfg, t, gi);
           if (extra > 0) {
             totalAnimal += extra;
@@ -2594,12 +2594,12 @@ const Game = {
               harvestByFarm[gKey].animalIds[cfg.animalId] =
                 (harvestByFarm[gKey].animalIds[cfg.animalId] || 0) + extra;
             }
-            // Tưới ô mới trồng
+            // Chăm chuồng mới nuôi
             (pens || []).forEach(p => {
               if (p && p.animalId && (p.waterCount || 0) < 3) {
                 p.waterCount = 3;
                 p.watered = true;
-                p.lastWatered = t;
+                p.lastCareed = t;
               }
             });
           }
@@ -2620,7 +2620,7 @@ const Game = {
         if (ev.type === 'rain') {
           const r = this.applyOfflineRainAt(ev.t);
           rainHits++;
-          rainWatered += r.watered || 0;
+          rainCareed += r.watered || 0;
           if (r.collected) {
             rainCollected = (rainCollected || 0) + (r.collected || 0);
             rainCollectCoins = (rainCollectCoins || 0) + (r.collectCoins || 0);
@@ -2641,7 +2641,7 @@ const Game = {
 
     // ── Offline NYC: multi-cycle theo thời gian offline (math) ──
     // Tôn trọng raisedAt thật của từng ô — không ép harvest/reRaise khi chưa chín
-    // (trước đây bỏ qua raisedAt + force ≥1 vòng khi offline ≥30s → reset tiến độ cây)
+    // (trước đây bỏ qua raisedAt + force ≥1 vòng khi offline ≥30s → reset tiến độ nuôi)
     {
       const endMs = now;
       const offlineSec = Math.max(0, (endMs - from) / 1000);
@@ -2649,7 +2649,7 @@ const Game = {
       // Chuẩn hóa nycUntil
       const nycUntilMs = this.toMs(currentPlayer.nycUntil) || Number(currentPlayer.nycUntil) || 0;
       if (nycUntilMs > 0) currentPlayer.nycUntil = nycUntilMs;
-      const canReplant = nycBuffOn && (
+      const canReRaise = nycBuffOn && (
         nycUntilMs > endMs || nycUntilMs > from || this.isNycActive() || this.isNycActiveAt(endMs) || this.isNycActiveAt(from)
       );
 
@@ -2682,7 +2682,7 @@ const Game = {
           if (p.animalId) {
             p.waterCount = 3;
             p.watered = true;
-            if (!p.lastWatered) p.lastWatered = from;
+            if (!p.lastCareed) p.lastCareed = from;
             if (!(Number(p.baseRaiseTime) > 0)) {
               try {
                 const anDef = this.getAnimal(p.animalId);
@@ -2711,11 +2711,11 @@ const Game = {
       let nCycles = Math.floor(offlineSec / sampleGrow);
       if (nCycles < 1 && offlineSec >= sampleGrow * 0.85) nCycles = 1;
       // Đã bỏ: if (nCycles < 1 && offlineSec >= 30) nCycles = 1;
-      if (!canReplant) nCycles = Math.min(nCycles, 1);
+      if (!canReRaise) nCycles = Math.min(nCycles, 1);
       nCycles = Math.max(0, Math.min(600, nCycles));
 
       currentPlayer._offlineNycDebug = {
-        canReplantNow: !!canReplant,
+        canReRaiseNow: !!canReRaise,
         nycUntilMs,
         endMs,
         from,
@@ -2745,7 +2745,7 @@ const Game = {
             currentPlayer.pens = pens;
 
             // Nuôi ô trống lần đầu nếu cần
-            if (canReplant && cfg.animalId) {
+            if (canReRaise && cfg.animalId) {
               const n0 = this._nycAnimalEmptiesAt(pens, cfg, from, gi);
               if (n0 > 0) {
                 totalAnimal += n0;
@@ -2775,7 +2775,7 @@ const Game = {
 
               // Đảm bảo có con để bắt đầu chuỗi
               if (!pen.animalId) {
-                if (!(canReplant && cfg.animalId && this._nycAnimalOneAt(pen, cfg, from, gi))) continue;
+                if (!(canReRaise && cfg.animalId && this._nycAnimalOneAt(pen, cfg, from, gi))) continue;
               }
 
               pen.waterCount = 3;
@@ -2820,7 +2820,7 @@ const Game = {
                 penCycles = 1;
                 firstReadyAt = endMs;
               }
-              if (!canReplant) penCycles = Math.min(plotCycles, 1);
+              if (!canReRaise) penCycles = Math.min(plotCycles, 1);
               penCycles = Math.max(0, Math.min(600, penCycles));
 
               // Không có vòng chín thật sự → giữ nguyên raisedAt, bỏ qua ô này
@@ -2830,9 +2830,9 @@ const Game = {
                 const harvestT = Math.min(endMs, firstReadyAt + c * growMs);
                 if (harvestT > endMs + 50) break;
 
-                // Có cây?
+                // Có con?
                 if (!pen.animalId) {
-                  if (!(canReplant && cfg.animalId && this._nycAnimalOneAt(pen, cfg, harvestT - growMs, gi))) break;
+                  if (!(canReRaise && cfg.animalId && this._nycAnimalOneAt(pen, cfg, harvestT - growMs, gi))) break;
                 }
 
                 // Chỉ chỉnh raisedAt về đúng mốc chín của vòng này (không reset tùy tiện)
@@ -2843,7 +2843,7 @@ const Game = {
 
                 let r = null;
                 try {
-                  r = this._nycHarvestOneAt(pen, harvestT, gi, cfg, canReplant && !!cfg.animalId, true, true);
+                  r = this._nycHarvestOneAt(pen, harvestT, gi, cfg, canReRaise && !!cfg.animalId, true, true);
                 } catch (e) {
                   console.warn('math harvest', gi, i, c, e);
                   break;
@@ -2871,7 +2871,7 @@ const Game = {
                   pen.animalStar = false;
     pen.seedMyth = false;
                   const fake = { harvested: 1, raised: 0, amount, animalName, animalId: hid, animalStar: wasStar };
-                  if (canReplant && cfg.animalId && this._nycAnimalOneAt(pen, cfg, harvestT, gi)) {
+                  if (canReRaise && cfg.animalId && this._nycAnimalOneAt(pen, cfg, harvestT, gi)) {
                     fake.raised = 1;
                   }
                   recordHarvestStat(fake, gi + ':' + i, growSec);
@@ -2883,13 +2883,13 @@ const Game = {
                 // Chuẩn bị vòng sau
                 if (c < penCycles - 1) {
                   if (!pen.animalId) {
-                    if (!(canReplant && cfg.animalId && this._nycAnimalOneAt(pen, cfg, harvestT, gi))) break;
+                    if (!(canReRaise && cfg.animalId && this._nycAnimalOneAt(pen, cfg, harvestT, gi))) break;
                   }
                   if (pen.animalId) {
                     pen.raisedAt = harvestT;
                     pen.waterCount = 3;
                     pen.watered = true;
-                    pen.lastWatered = harvestT;
+                    pen.lastCareed = harvestT;
                   }
                 }
               }
@@ -2910,12 +2910,12 @@ const Game = {
 
     if (rainHits) {
       let rainNote = this.isFairyActive()
-        ? `Mưa ${rainHits} trận (Tiên tưới kèm)`
+        ? `Mưa ${rainHits} trận (Tiên chăm kèm)`
         : `Mưa ${rainHits} trận (buff lớn)`;
       if (rainCollected > 0) {
         rainNote += ` · Tiên nhặt ${rainCollected} vật phẩm`;
         if (rainCollectCoins) rainNote += ` (+${rainCollectCoins}🪙)`;
-        if (rainCollectSeeds) rainNote += ` (+${rainCollectSeeds} hạt)`;
+        if (rainCollectSeeds) rainNote += ` (+${rainCollectSeeds} con)`;
       }
       notes.push(rainNote);
     }
@@ -3025,7 +3025,7 @@ const Game = {
     const lines = [];
     lines.push('BÙ OFFLINE — vắng ' + offlineText + ' (từ ' + new Date(from).toLocaleString('vi-VN') + ' → ' + new Date(now).toLocaleString('vi-VN') + ')');
     lines.push('Tóm tắt: ' + (notes.length ? notes.join(' · ') : (changed ? 'đã cập nhật trạng thái' : 'không có thay đổi lớn')));
-    lines.push('Mưa: ' + rainHits + ' trận (cố định mỗi 30 phút) · ô được Tiên tưới kèm mưa: ' + rainWatered);
+    lines.push('Mưa: ' + rainHits + ' trận (cố định mỗi 30 phút) · ô được Tiên chăm kèm mưa: ' + rainCareed);
     
     let cycleLeftSec = null;
     if (fairyActive) {
@@ -3109,7 +3109,7 @@ const Game = {
           if (!d.cfgAnimal && seedName === '—') {
             reason = ' · chưa chọn con NYC';
           } else if ((d.withAnimal || 0) === 0 && (d.seedLeft || 0) <= 0) {
-            reason = ' · hết hạt, không nuôi được';
+            reason = ' · hết giống, không nuôi được';
           } else if ((d.withAnimal || 0) === 0 && nAnimal === 0) {
             reason = ' · không có con / không nuôi được lúc off';
           } else if (growEff != null && offlineMs > 0 && growEff * 1000 > offlineMs && mult <= 1.01) {
@@ -3138,9 +3138,9 @@ const Game = {
         );
       });
     } else if (totalHarvest || totalAnimal) {
-      lines.push('Chi tiết vườn: không tách được theo trại');
+      lines.push('Chi tiết trại: không tách được theo trại');
     } else if (nycEnabledFarms > 0) {
-      lines.push('Chi tiết vườn: NYC bật nhưng chưa thu được (con chưa chín / hết con / thời gian vắng quá ngắn)');
+      lines.push('Chi tiết trại: NYC bật nhưng chưa thu được (con chưa chín / hết con / thời gian vắng quá ngắn)');
     }
     lines.push(
       'Tổng quan: ' + totalPensAll + ' ô sở hữu · NYC bật ' + nycEnabledFarms + ' trại (' + pensOnNycFarms + ' ô)' +
@@ -3165,14 +3165,14 @@ const Game = {
     }
     lines.push('Giúp việc: ' + (helperActive ? 'ĐANG BẬT' : 'tắt/hết hạn') + ' · mua theo mốc kho: ' + helperBuys + ' đợt');
     if (fromLog) {
-      lines.push('Có log thao tác (trồng/tưới/bón) → mốc bù lấy sớm hơn lastSeen');
+      lines.push('Có log thao tác (nuôi/chăm/cho ăn) → mốc bù lấy sớm hơn lastSeen');
     }
     // Debug multi-cycle
     try {
       const dbg = currentPlayer._offlineNycDebug || {};
       lines.push(
         'Debug NYC offline: mode=' + (dbg.mode || '?') +
-        ' · canReplant=' + (dbg.canReplantNow ? 'YES' : 'NO') +
+        ' · canReRaise=' + (dbg.canReRaiseNow ? 'YES' : 'NO') +
         ' · offline=' + (dbg.offlineSec != null ? dbg.offlineSec + 's' : '?') +
         ' · grow~' + (dbg.sampleGrow != null ? dbg.sampleGrow + 's' : '?') +
         ' · nCycles=' + (dbg.nCycles != null ? dbg.nCycles : '?') +
@@ -3200,7 +3200,7 @@ const Game = {
           to: now,
           rainHits,
           rainChance,
-          rainWatered,
+          rainCareed,
           fairyCycles,
           totalHarvest,
           totalAnimal,
@@ -3231,7 +3231,7 @@ const Game = {
       fairyCycles,
       helperBuys,
       rainHits,
-      rainWatered,
+      rainCareed,
       rainChance,
       fromLog: fromLog || null
     };
@@ -3265,14 +3265,14 @@ const Game = {
       : (Number(pen.baseRaiseTime) > 0 ? Number(pen.baseRaiseTime) : 0);
     pen.waterCount = 0;
     pen.watered = false;
-    pen.lastWatered = null;
+    pen.lastCareed = null;
     pen.feedId = null;
     pen.feedActiondAt = null;
     
     if (typeof gi === 'number' && this.isFairyActiveAt(raiseTimeMs) && this.isFairyFarmEnabled(gi)) {
       pen.waterCount = 3;
       pen.watered = true;
-      pen.lastWatered = raiseTimeMs;
+      pen.lastCareed = raiseTimeMs;
       const fcfg = this.getFairyConfigForFarm
         ? this.getFairyConfigForFarm(gi)
         : this.getFairyConfig();
@@ -3485,7 +3485,7 @@ const Game = {
     qty = Math.max(1, Math.min(9999, parseInt(qty, 10) || 1));
     if (kind === 'seed') {
       const animal = this.getAnimal(id);
-      if (!animal) return { ok: false, bought: 0, cost: 0, msg: 'Không có hạt' };
+      if (!animal) return { ok: false, bought: 0, cost: 0, msg: 'Không có giống' };
       if (!this.isAnimalAvailable(animal)) return { ok: false, bought: 0, cost: 0, msg: 'Limited hết hạn' };
       const cost = animal.buyPrice * qty;
       if (!this.chargeCoins(cost)) return { ok: false, bought: 0, cost: 0, msg: 'Thiếu tiền' };
@@ -3657,7 +3657,7 @@ const Game = {
       pen.raisedAt = null;
       pen.watered = false;
       pen.waterCount = 0;
-      pen.lastWatered = null;
+      pen.lastCareed = null;
       pen.feedId = null;
       pen.feedActiondAt = null;
       pen.animalStar = false;
@@ -3977,7 +3977,7 @@ const Game = {
       }
       this.addActivity(`Ghép thất bại ${animal.name} (${lastRate}%)`);
       await savePlayer();
-      return { ok: true, success: false, msg: `💥 Thất bại (tỉ lệ ${lastRate}%). Mất 1 hạt` + (protectId ? ' + bùa' : '') + '.' };
+      return { ok: true, success: false, msg: `💥 Thất bại (tỉ lệ ${lastRate}%). Mất 1 giống` + (protectId ? ' + bùa' : '') + '.' };
     }
 
     this.addActivity(`Ghép ×${did}: thành công ${success}, thất bại ${fail} (${animal.name}, ${lastRate}%)`);
@@ -4097,7 +4097,7 @@ const Game = {
   async harvestPen(plotId) {
     if (!currentPlayer) return { ok: false, msg: 'Chưa đăng nhập!' };
     const pen = currentPlayer.pens[plotId];
-    if (!pen || !pen.animalId) return { ok: false, msg: 'Không có cây!' };
+    if (!pen || !pen.animalId) return { ok: false, msg: 'Không có con!' };
     if (!this.isReady(pen)) return { ok: false, msg: 'Con chưa chín!' };
     const animal = this.getAnimal(pen.animalId);
     let amount = animal.yield;
@@ -4120,7 +4120,7 @@ const Game = {
     pen.raisedAt = null;
     pen.watered = false;
     pen.waterCount = 0;
-    pen.lastWatered = null;
+    pen.lastCareed = null;
     pen.feedId = null;
     pen.feedActiondAt = null;
     pen.animalStar = false;
@@ -4166,7 +4166,7 @@ const Game = {
         pen.raisedAt = null;
         pen.watered = false;
         pen.waterCount = 0;
-        pen.lastWatered = null;
+        pen.lastCareed = null;
         pen.feedId = null;
         pen.feedActiondAt = null;
         pen.animalStar = false;
@@ -4187,13 +4187,13 @@ const Game = {
   async removeAnimal(plotId) {
     if (!currentPlayer) return { ok: false, msg: 'Chưa đăng nhập!' };
     const pen = currentPlayer.pens[plotId];
-    if (!pen || !pen.animalId) return { ok: false, msg: 'Không có cây!' };
+    if (!pen || !pen.animalId) return { ok: false, msg: 'Không có con!' };
     const animal = this.getAnimal(pen.animalId);
     pen.animalId = null;
     pen.raisedAt = null;
     pen.watered = false;
     pen.waterCount = 0;
-    pen.lastWatered = null;
+    pen.lastCareed = null;
     pen.feedId = null;
     pen.feedActiondAt = null;
     pen.animalStar = false;
@@ -4362,7 +4362,7 @@ const Game = {
     currentPlayer.coins += total;
     currentPlayer.stats.earned = (currentPlayer.stats.earned || 0) + total;
     if (total > 0) {
-      this.addActivity(`Bán tất cả hoa quả (+${total}🪙)`);
+      this.addActivity(`Bán tất cả sản phẩm (+${total}🪙)`);
       await savePlayer();
     }
     return { ok: true, msg: total > 0 ? `Bán hết, nhận ${total}🪙!` : 'Kho trống.' };
@@ -4456,7 +4456,7 @@ const Game = {
     if (!report || !currentPlayer) return;
     let lines = Array.isArray(report.lines) ? report.lines.slice() : [];
     
-    // Ưu tiên giữ dòng từng trại + tóm tắt; cho phép nhiều dòng hơn (nhiều vườn)
+    // Ưu tiên giữ dòng từng trại + tóm tắt; cho phép nhiều dòng hơn (nhiều trại)
     const MAX_OFFLINE_LINES = 40;
     if (lines.length > MAX_OFFLINE_LINES) {
       const head = lines[0];
@@ -4485,7 +4485,7 @@ const Game = {
           to: report.to,
           rainHits: report.rainHits,
           rainChance: report.rainChance,
-          rainWatered: report.rainWatered,
+          rainCareed: report.rainCareed,
           fairyCycles: report.fairyCycles,
           totalHarvest: report.totalHarvest,
           totalAnimal: report.totalAnimal,
@@ -4510,7 +4510,7 @@ const Game = {
   async buyPen(qty = 1) {
     if (!currentPlayer) return { ok: false, msg: 'Chưa đăng nhập!' };
     this.ensureFarms();
-    const max = this.MAX_PLOTS_PER_GARDEN;
+    const max = this.MAX_PENS_PER_FARM;
     const have = currentPlayer.pens.length;
     const room = max - have;
     if (room <= 0) {
@@ -4530,7 +4530,7 @@ const Game = {
         raisedAt: null,
         watered: false,
         waterCount: 0,
-        lastWatered: null,
+        lastCareed: null,
         feedId: null
       });
     }
