@@ -1987,15 +1987,25 @@ function renderFarm() {
       div.classList.add('empty');
       div.innerHTML = `
         <div class="pen-icon">🟫</div>
-        <div class="pen-name">Ô trống</div>
-        <div class="pen-status">Nhấn để nuôi</div>
+        <div class="pen-name">Chuồng trống</div>
+        <div class="pen-status">Nhấn để thả giống</div>
       `;
       div.addEventListener('click', () => openEmptyPenModal(i));
     } else {
-      const animal = Game.getAnimal(pen.animalId);
+      let animal = Game.getAnimal(pen.animalId);
+      // Fallback nếu định nghĩa chưa load / id cũ
+      if (!animal && pen.animalId) {
+        animal = {
+          id: pen.animalId,
+          icon: pen.icon || '🐾',
+          name: pen.animalName || String(pen.animalId),
+          raiseTime: Number(pen.baseRaiseTime) || 60,
+          raiseStages: null
+        };
+      }
       if (!animal) {
         div.classList.add('empty');
-        div.innerHTML = `<div class="pen-icon">❓</div><div class="pen-name">Lỗi dữ liệu</div>`;
+        div.innerHTML = `<div class="pen-icon">❓</div><div class="pen-name">Lỗi dữ liệu</div><div class="pen-status">${pen.animalId || ''}</div>`;
       } else {
         const progress = Game.getProgress(pen);
         const ready = progress >= 100;
@@ -2090,7 +2100,7 @@ function renderFarm() {
 
 
 function openEmptyPenModal(plotId) {
-  selectedPenId = penId;
+  selectedPenId = plotId;
   const pen = currentPlayer.pens[plotId];
   if (!pen) return;
   
@@ -2128,7 +2138,7 @@ function openEmptyPenModal(plotId) {
 }
 
 function openAnimalModal(plotId) {
-  selectedPenId = penId;
+  selectedPenId = plotId;
   const seeds = (currentPlayer.inventory && currentPlayer.inventory.animals) || {};
   const stars = (currentPlayer.inventory && currentPlayer.inventory.animalsStar) || {};
   const myths = (currentPlayer.inventory && currentPlayer.inventory.animalsMyth) || {};
@@ -2143,7 +2153,7 @@ function openAnimalModal(plotId) {
   } else {
     const info = document.createElement('p');
     info.style.cssText = 'text-align:center;color:#52796f;font-size:0.9rem;margin-bottom:10px';
-    info.textContent = `Ô trống: ${empty} · Ưu tiên ✨ huyền thoại → ⭐ sao → thường`;
+    info.textContent = `Chuồng trống: ${empty} · Ưu tiên ✨ huyền thoại → ⭐ sao → thường`;
     list.appendChild(info);
 
     ids.sort((a, b) => {
@@ -2205,7 +2215,7 @@ function openAnimalModal(plotId) {
 }
 
 function openPenModal(plotId) {
-  selectedPenId = penId;
+  selectedPenId = plotId;
   const pen = currentPlayer.pens[plotId];
   const animal = Game.getAnimal(pen.animalId);
   if (!animal) return;
@@ -2682,7 +2692,7 @@ function refreshSupportMenuStatus() {
 
 
 function openFertModal(plotId) {
-  selectedPenId = penId;
+  selectedPenId = plotId;
   const list = document.getElementById('fert-pick-list');
   list.innerHTML = '';
   const ferts = (currentPlayer.inventory && currentPlayer.inventory.feeds) || {};

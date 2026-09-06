@@ -4094,6 +4094,108 @@ async function pullRemotePlayerIfNewer() {
   }
 }
 
+
+/** Migrate schema cũ (cây/vườn) → chăn nuôi (animalId/raisedAt/pens/farms) */
+function migratePlayerSchema(player) {
+  if (!player || typeof player !== 'object') return player;
+
+  // plots → pens
+  if (!player.pens && player.plots) {
+    player.pens = player.plots;
+    delete player.plots;
+  }
+  // gardens → farms
+  if (!player.farms && player.gardens) {
+    player.farms = player.gardens;
+    delete player.gardens;
+  }
+
+  const fixPen = (p, idx) => {
+    if (!p || typeof p !== 'object') {
+      return {
+        id: idx, animalId: null, raisedAt: null, watered: false,
+        waterCount: 0, lastWatered: null, feedId: null
+      };
+    }
+    // plantId → animalId
+    if (p.plantId != null && (p.animalId == null || p.animalId === '')) {
+      p.animalId = p.plantId;
+    }
+    // plantedAt → raisedAt
+    if (p.plantedAt != null && (p.raisedAt == null || p.raisedAt === '')) {
+      p.raisedAt = p.plantedAt;
+    }
+    // fertilizerId / fertId → feedId
+    if (p.fertilizerId != null && !p.feedId) p.feedId = p.fertilizerId;
+    if (p.fertId != null && !p.feedId) p.feedId = p.fertId;
+    // feedActionrId typo leftovers
+    if (p.feedActionrId != null && !p.feedId) p.feedId = p.feedActionrId;
+    if (typeof p.id !== 'number') p.id = idx;
+    // cleanup old keys (giữ animalId/raisedAt)
+    delete p.plantId;
+    delete p.plantedAt;
+    delete p.fertilizerId;
+    delete p.fertId;
+    delete p.feedActionrId;
+    delete p.feedActiondAt;
+    return p;
+  };
+
+  if (Array.isArray(player.pens)) {
+    player.pens = player.pens.map((p, i) => fixPen(p, i));
+  } else if (player.pens && typeof player.pens === 'object') {
+    player.pens = Object.keys(player.pens).map((k, i) => fixPen(player.pens[k], i));
+  }
+
+  if (Array.isArray(player.farms)) {
+    player.farms = player.farms.map((g, gi) => {
+      if (Array.isArray(g)) return g.map((p, i) => fixPen(p, i));
+      if (g && Array.isArray(g.pens)) {
+        g.pens = g.pens.map((p, i) => fixPen(p, i));
+        return g.pens;
+      }
+      if (g && typeof g === 'object') {
+        const keys = Object.keys(g).filter(k => /^\d+$/.test(k)).sort((a, b) => Number(a) - Number(b));
+        if (keys.length) return keys.map((k, i) => fixPen(g[k], i));
+      }
+      return Array.isArray(g) ? g : [];
+    });
+  }
+
+  // inventory.seeds → animals
+  if (player.inventory) {
+    if (player.inventory.seeds && !player.inventory.animals) {
+      player.inventory.animals = player.inventory.seeds;
+      delete player.inventory.seeds;
+    }
+    if (player.inventory.seedsStar && !player.inventory.animalsStar) {
+      player.inventory.animalsStar = player.inventory.seedsStar;
+      delete player.inventory.seedsStar;
+    }
+    if (player.inventory.seedsMyth && !player.inventory.animalsMyth) {
+      player.inventory.animalsMyth = player.inventory.seedsMyth;
+      delete player.inventory.seedsMyth;
+    }
+    if (player.inventory.fertilizer && !player.inventory.feeds) {
+      // legacy number bag
+      if (typeof player.inventory.fertilizer === 'object') {
+        player.inventory.feeds = player.inventory.fertilizer;
+      }
+      delete player.inventory.fertilizer;
+    }
+  }
+
+  // stats.planted → raised
+  if (player.stats) {
+    if (player.stats.planted != null && player.stats.raised == null) {
+      player.stats.raised = player.stats.planted;
+    }
+  }
+
+  return player;
+}
+
+
 async function loadPlayer(uid, email) {
   if (typeof initServerTime === 'function') {
     try { await initServerTime(); } catch (_) {}
@@ -4205,6 +4307,8 @@ async function loadPlayer(uid, email) {
       delete p.feed;
       p.id = i;
     });
+
+    try { migratePlayerSchema(currentPlayer); } catch (e) { console.warn('migratePlayerSchema', e); }
 
     // Luôn lấy role mới nhất từ server (tránh local backup / save cũ ghi đè admin)
     try {

@@ -122,6 +122,8 @@ const Game = {
   },
 
   ensureFarms() {
+    try { if (typeof migratePlayerSchema === 'function' && currentPlayer) migratePlayerSchema(currentPlayer); } catch (_) {}
+
     if (!currentPlayer) return;
 
     // Firebase đôi khi lưu farms dạng object {0:[],1:[]} thay vì array
