@@ -8386,3 +8386,19 @@ html[data-theme="dark"] .chat-messages {
   justify-content: center;
   text-align: center;
 }
+
+
+/* Trạng thái buff chăm / cám trong modal chuồng */
+.pen-boost-on {
+  color: #4ade80;
+  font-weight: 600;
+}
+.pen-boost-warn {
+  color: #fbbf24;
+  font-weight: 600;
+}
+.pen-boost-off {
+  color: #f87171;
+  font-weight: 500;
+  opacity: 0.95;
+}

@@ -2244,8 +2244,8 @@ function openPenModal(plotId) {
         <div class="pen-detail-progress-label">Tiến độ sẵn sàng thu: <strong data-role="pen-pct">${Math.min(100, progress)}%</strong></div>
         <div class="pen-progress pen-progress-lg"><div class="pen-progress-bar" data-role="pen-bar" style="width:${Math.min(100, progress)}%"></div></div>
       </div>
-      <p><strong>Chăm sóc:</strong> <span data-role="pen-water" class="${waterDisp.active ? '' : 'pen-boost-off'}">${waterDisp.text}</span></p>
-      <p><strong>Thức ăn:</strong> <span data-role="pen-fert" class="${fertDisp.active ? '' : 'pen-boost-off'}">${fertText}</span></p>
+      <p><strong>Chăm sóc:</strong> <span data-role="pen-water" class="${waterDisp.active ? 'pen-boost-on' : 'pen-boost-off'}">${waterDisp.text}</span></p>
+      <p><strong>Thức ăn:</strong> <span data-role="pen-fert" class="${fertDisp.active ? (fertDisp.nearExpiry ? 'pen-boost-warn' : 'pen-boost-on') : 'pen-boost-off'}">${fertText}</span></p>
       <p><strong>Sản lượng gốc:</strong> ${animal.yield} · Giá bán: ${animal.sellPrice}🪙</p>
       ${animal.desc ? `<p class="pen-detail-desc">${animal.desc}</p>` : ''}
     </div>
@@ -2334,6 +2334,8 @@ function softUpdatePenModal() {
   if (fertEl) {
     fertEl.textContent = fertDisp.text;
     fertEl.classList.toggle('pen-boost-off', !fertDisp.active);
+    fertEl.classList.toggle('pen-boost-on', !!fertDisp.active && !fertDisp.nearExpiry);
+    fertEl.classList.toggle('pen-boost-warn', !!fertDisp.active && !!fertDisp.nearExpiry);
   }
 
   

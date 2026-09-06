@@ -1600,22 +1600,35 @@ const Game = {
 
   getFertDisplayState(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
     const rem = this.getFertBoostRemainingMs(pen, now);
-    if (rem <= 0 || rem <= this.BOOST_PREVIEW_MS || !pen.feedId) {
+    const near = rem > 0 && rem <= this.BOOST_PREVIEW_MS;
+    if (!pen || !pen.feedId || rem <= 0) {
       return {
         active: false,
-        nearExpiry: rem > 0 && rem <= this.BOOST_PREVIEW_MS,
-        remainingMs: rem,
-        text: 'Chưa cho ăn cám',
+        nearExpiry: false,
+        remainingMs: 0,
+        text: '❌ Chưa cho ăn cám',
         fertId: null
       };
     }
     const fert = this.getFeed(pen.feedId);
-    const name = fert ? `${fert.icon || ''} ${fert.name}`.trim() : pen.feedId;
+    const name = fert ? `${fert.icon || '🥣'} ${fert.name}`.trim() : String(pen.feedId);
+    const timeTxt = (typeof this.formatTime === 'function')
+      ? this.formatTime(Math.ceil(rem / 1000))
+      : (Math.ceil(rem / 1000) + 's');
+    if (near) {
+      return {
+        active: true,
+        nearExpiry: true,
+        remainingMs: rem,
+        text: `⚠️ Sắp hết: ${name} · còn ${timeTxt}`,
+        fertId: pen.feedId
+      };
+    }
     return {
       active: true,
       nearExpiry: false,
       remainingMs: rem,
-      text: name,
+      text: `✅ Đã cho ăn: ${name} · còn ${timeTxt}`,
       fertId: pen.feedId
     };
   },
