@@ -61,10 +61,17 @@ document.querySelectorAll('.side-btn').forEach(btn => {
 
 async function renderDashboard() {
   await refreshAnimals();
-  const usersSnap = await db.ref('users').once('value');
-  const users = usersSnap.val() || {};
+  let users = {};
+  try {
+    const usersSnap = await db.ref('users').once('value');
+    users = usersSnap.val() || {};
+  } catch (e) {
+    console.error('dashboard users', e);
+    showToast('Không tải được danh sách user — kiểm tra Rules (admin đọc /users)', 'error');
+    users = {};
+  }
   const userEntries = Object.entries(users);
-  const userList = userEntries.map(([uid, u]) => Object.assign({}, u, { uid: u.uid || uid }));
+  const userList = userEntries.map(([uid, u]) => Object.assign({}, u || {}, { uid: (u && u.uid) || uid }));
 
   let totalCoins = 0, totalAnimaled = 0, totalHarvested = 0;
   const allActivity = [];
@@ -334,9 +341,22 @@ document.querySelectorAll('.modal').forEach(modal => {
 
 
 async function renderUsers() {
-  const snap = await db.ref('users').once('value');
-  const users = snap.val() || {};
   const tbody = document.querySelector('#users-table tbody');
+  if (!tbody) return;
+  let users = {};
+  try {
+    const snap = await db.ref('users').once('value');
+    users = snap.val() || {};
+  } catch (e) {
+    console.error('renderUsers', e);
+    tbody.innerHTML = `<tr><td colspan="6" style="color:#e63946;padding:16px">
+      Không đọc được danh sách user (PERMISSION_DENIED).<br>
+      Hãy Publish lại <strong>database.rules.json</strong> (cho phép admin đọc node <code>users</code>),
+      và đảm bảo <code>users/&lt;UID&gt;/role = "admin"</code>.<br>
+      <small>${(e && e.message) ? e.message : e}</small>
+    </td></tr>`;
+    return;
+  }
 
   const q = ((document.getElementById('user-search-input') || {}).value || '').trim().toLowerCase();
   const onlyUnlimited = !!(document.getElementById('user-filter-unlimited') || {}).checked;
@@ -351,8 +371,12 @@ async function renderUsers() {
   if (onlyUnlimited) {
     uids = uids.filter(uid => !!(users[uid] && users[uid].unlimitedResources));
   }
+  if (!uids.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:16px;color:#52796f">Chưa có người chơi hoặc không khớp bộ lọc.</td></tr>`;
+    return;
+  }
   tbody.innerHTML = uids.map(uid => {
-    const u = users[uid];
+    const u = users[uid] || {};
     const banned = !!u.banned;
     const unlim = !!u.unlimitedResources;
     return `
@@ -421,12 +445,12 @@ async function renderUsers() {
           for (let i = 0; i < n; i++) {
             u.pens.push({
               id: u.pens.length, animalId: null, raisedAt: null,
-              watered: false, waterCount: 0, lastCareed: null,
-              feedId: null, feedActiondAt: null
+              watered: false, waterCount: 0, lastWatered: null,
+              feedId: null, feedAt: null
             });
           }
           if (!u.activity) u.activity = [];
-          u.activity.unshift({ text: `Admin thêm ${n} chuồng thường`, time: new Date().toLocaleString('vi-VN') });
+          u.activity.unshift({ text: `Admin thêm ${n} chuồng`, time: new Date().toLocaleString('vi-VN') });
           if (u.activity.length > 30) u.activity = u.activity.slice(0, 30);
           return adminTouchUpdatedAt(u);
         });
@@ -437,17 +461,17 @@ async function renderUsers() {
         const len = (tx.snapshot && tx.snapshot.val() && tx.snapshot.val().pens)
           ? (Array.isArray(tx.snapshot.val().pens) ? tx.snapshot.val().pens.length : Object.keys(tx.snapshot.val().pens).length)
           : '?';
-        showToast(`Đã thêm ${n} ô thường (tổng ${len} ô)!`, 'success');
+        showToast(`Đã thêm ${n} chuồng (tổng ${len} chuồng)!`, 'success');
         renderUsers();
       } catch (e) {
-        showToast('Lỗi thêm ô: ' + (e.message || e), 'error');
+        showToast('Lỗi thêm chuồng: ' + (e.message || e), 'error');
       }
     });
   });
 
   document.querySelectorAll('.btn-add-special').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const n = parseInt(prompt('Số ô đặc biệt thêm:', '1'), 10);
+      const n = parseInt(prompt('Số chuồng đặc biệt thêm:', '1'), 10);
       if (!n || n < 1) return;
       const multStr = prompt('Hệ số tăng tốc (1.5 / 2 / 3 / 5):', '2');
       const mult = parseFloat(multStr);
@@ -460,15 +484,15 @@ async function renderUsers() {
           for (let i = 0; i < n; i++) {
             u.pens.push({
               id: u.pens.length, animalId: null, raisedAt: null,
-              watered: false, waterCount: 0, lastCareed: null,
-              feedId: null, feedActiondAt: null,
+              watered: false, waterCount: 0, lastWatered: null,
+              feedId: null, feedAt: null,
               specialMult: mult,
               specialId: 'admin-boost-' + mult,
               specialName: 'Ô đặc biệt x' + mult
             });
           }
           if (!u.activity) u.activity = [];
-          u.activity.unshift({ text: `Admin thêm ${n} ô đặc biệt x${mult}`, time: new Date().toLocaleString('vi-VN') });
+          u.activity.unshift({ text: `Admin thêm ${n} chuồng đặc biệt x${mult}`, time: new Date().toLocaleString('vi-VN') });
           if (u.activity.length > 30) u.activity = u.activity.slice(0, 30);
           return adminTouchUpdatedAt(u);
         });
@@ -476,10 +500,10 @@ async function renderUsers() {
           showToast('Không ghi được. Thử lại!', 'error');
           return;
         }
-        showToast(`Đã thêm ${n} ô đặc biệt x${mult}!`, 'success');
+        showToast(`Đã thêm ${n} chuồng đặc biệt x${mult}!`, 'success');
         renderUsers();
       } catch (e) {
-        showToast('Lỗi thêm ô đặc biệt: ' + (e.message || e), 'error');
+        showToast('Lỗi thêm chuồng đặc biệt: ' + (e.message || e), 'error');
       }
     });
   });
