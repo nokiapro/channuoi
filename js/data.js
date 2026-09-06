@@ -4011,6 +4011,10 @@ function restorePlayerLocalIfNewer(remotePlayer) {
       _playerBaseUpdatedAt = Math.max(bAt, rAt);
       _playerDirty = true;
       try { mergeRemoteAdminGifts(remotePlayer); } catch (_) {}
+      // Không để backup local kéo role về user nếu server đang là admin
+      if (remotePlayer && remotePlayer.role) {
+        currentPlayer.role = remotePlayer.role;
+      }
       return true;
     }
 
@@ -4202,6 +4206,13 @@ async function loadPlayer(uid, email) {
       p.id = i;
     });
 
+    // Luôn lấy role mới nhất từ server (tránh local backup / save cũ ghi đè admin)
+    try {
+      const roleSnap = await db.ref('users/' + uid + '/role').once('value');
+      if (roleSnap.exists() && roleSnap.val()) {
+        currentPlayer.role = roleSnap.val();
+      }
+    } catch (_) {}
     isAdmin = currentPlayer.role === 'admin';
     if (!currentPlayer.helpWaterLog) currentPlayer.helpWaterLog = {};
     if (typeof Game !== 'undefined' && Game.applyPendingHelps) {
@@ -4337,6 +4348,22 @@ async function savePlayer(opts) {
   } catch (e) {
     payload = currentPlayer;
   }
+
+  // Bảo vệ role: không cho client ghi đè admin → user khi F5 / save
+  try {
+    const roleSnap = await ref.child('role').once('value');
+    if (roleSnap.exists()) {
+      const serverRole = roleSnap.val();
+      if (serverRole) {
+        payload.role = serverRole;
+        currentPlayer.role = serverRole;
+        isAdmin = serverRole === 'admin';
+      }
+    }
+  } catch (e) {
+    console.warn('preserve role', e);
+  }
+
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       await ref.set(payload);
