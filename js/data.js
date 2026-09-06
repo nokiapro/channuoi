@@ -3346,36 +3346,55 @@ async function resetPlayerData(opts) {
 }
 
 async function initGlobalData() {
-  const animalsSnap = await db.ref('animals').once('value');
-  if (!animalsSnap.exists()) {
-    const obj = {};
-    DEFAULT_ANIMALS.forEach(p => { obj[p.id] = p; });
-    await db.ref('animals').set(obj);
-    currentAnimals = [...DEFAULT_ANIMALS];
-  } else {
-    const val = animalsSnap.val() || {};
-    
-    let changed = false;
-    DEFAULT_ANIMALS.forEach(p => {
-      if (!val[p.id]) {
-        val[p.id] = p;
-        changed = true;
-      } else if (!val[p.id].raiseStages && p.raiseStages) {
-        val[p.id].raiseStages = p.raiseStages;
-        val[p.id].raiseTime = p.raiseTime;
-        changed = true;
+  try {
+    const animalsSnap = await db.ref('animals').once('value');
+    if (!animalsSnap.exists()) {
+      const obj = {};
+      DEFAULT_ANIMALS.forEach(p => { obj[p.id] = p; });
+      try {
+        await db.ref('animals').set(obj);
+      } catch (e) {
+        console.warn('seed animals denied, using local defaults', e);
       }
-    });
-    if (changed) await db.ref('animals').set(val);
-    currentAnimals = Object.keys(val).map(k => ({ ...val[k], id: val[k].id || k }));
+      currentAnimals = [...DEFAULT_ANIMALS];
+    } else {
+      const val = animalsSnap.val() || {};
+      let changed = false;
+      DEFAULT_ANIMALS.forEach(p => {
+        if (!val[p.id]) {
+          val[p.id] = p;
+          changed = true;
+        } else if (!val[p.id].raiseStages && p.raiseStages) {
+          val[p.id].raiseStages = p.raiseStages;
+          val[p.id].raiseTime = p.raiseTime;
+          changed = true;
+        }
+      });
+      if (changed) {
+        try { await db.ref('animals').set(val); } catch (e) { console.warn('merge animals denied', e); }
+      }
+      currentAnimals = Object.keys(val).map(k => ({ ...val[k], id: val[k].id || k }));
+    }
+  } catch (e) {
+    console.warn('load animals failed, local defaults', e);
+    currentAnimals = [...DEFAULT_ANIMALS];
   }
 
-  const setSnap = await db.ref('settings').once('value');
-  if (!setSnap.exists()) {
-    await db.ref('settings').set(DEFAULT_SETTINGS);
+  try {
+    const setSnap = await db.ref('settings').once('value');
+    if (!setSnap.exists()) {
+      try {
+        await db.ref('settings').set(DEFAULT_SETTINGS);
+      } catch (e) {
+        console.warn('seed settings denied, using local defaults', e);
+      }
+      currentSettings = { ...DEFAULT_SETTINGS };
+    } else {
+      currentSettings = { ...DEFAULT_SETTINGS, ...setSnap.val() };
+    }
+  } catch (e) {
+    console.warn('load settings failed, local defaults', e);
     currentSettings = { ...DEFAULT_SETTINGS };
-  } else {
-    currentSettings = { ...DEFAULT_SETTINGS, ...setSnap.val() };
   }
   try {
     if (typeof applySiteIcon === 'function') applySiteIcon(currentSettings.siteIconUrl);
@@ -4077,9 +4096,9 @@ async function loadPlayer(uid, email) {
   }
   const snap = await db.ref('users/' + uid).once('value');
   if (!snap.exists()) {
-    const usersSnap = await db.ref('users').once('value');
-    const isFirst = !usersSnap.exists() || Object.keys(usersSnap.val() || {}).length === 0;
-    const role = isFirst ? 'admin' : 'user';
+    // Không list toàn bộ /users (rules chặn). User mới = role user.
+    // Gán admin thủ công trong Firebase Console: users/<UID>/role = "admin"
+    const role = 'user';
     const data = createDefaultPlayerData(uid, email, role);
     data.updatedAt = nowMs();
     data.sessionId = CLIENT_SESSION_ID;

@@ -596,6 +596,9 @@ document.getElementById('btn-login').addEventListener('click', async () => {
     else if (e.code === 'auth/wrong-password') msg = 'Sai mật khẩu.';
     else if (e.code === 'auth/invalid-email') msg = 'Email không hợp lệ.';
     else if (e.code === 'auth/invalid-credential') msg = 'Email hoặc mật khẩu không đúng.';
+    else if (e.code === 'PERMISSION_DENIED' || (e.message && e.message.indexOf('PERMISSION_DENIED') >= 0) || (e.message && e.message.indexOf('permission_denied') >= 0))
+      msg = 'Bị từ chối quyền (Rules). Hãy Publish lại database.rules.json trên Firebase.';
+    else if (e.message) msg = 'Lỗi: ' + e.message;
     errEl.textContent = msg;
   } finally {
     btn.disabled = false;
