@@ -524,6 +524,7 @@ function bindFairyConfigUI() {
     if (res.ok) {
       await savePlayer();
       showToast(res.msg, 'success');
+      try { if (typeof renderFarm === 'function') renderFarm(); } catch (_) {}
       openFairyConfigModal(); 
       updateFairyBadge();
     } else {

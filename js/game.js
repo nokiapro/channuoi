@@ -49,7 +49,23 @@ const Game = {
       : (typeof DEFAULT_ANIMALS !== 'undefined' ? DEFAULT_ANIMALS : []);
     return list.find(p => p && (p.id === id || String(p.id) === s)) || null;
   },
-  getFeed(id) { return DEFAULT_FEEDS.find(f => f.id === id); },
+  FEED_ID_ALIASES: {
+    'phan-thuong': 'cam-thuong',
+    'phan-xanh': 'cam-xanh',
+    'phan-vang': 'cam-vang',
+    'phan-do': 'cam-do'
+  },
+
+  normalizeFeedId(id) {
+    if (!id) return id;
+    const s = String(id);
+    return (this.FEED_ID_ALIASES && this.FEED_ID_ALIASES[s]) || s;
+  },
+
+  getFeed(id) {
+    const nid = this.normalizeFeedId(id);
+    return DEFAULT_FEEDS.find(f => f.id === id || f.id === nid) || null;
+  },
   getFeeds() { return DEFAULT_FEEDS; },
   getProtect(id) { return DEFAULT_PROTECTS.find(p => p.id === id); },
   getProtects() { return DEFAULT_PROTECTS; },
@@ -1425,7 +1441,9 @@ const Game = {
     const pen = currentPlayer.pens[plotId];
     if (!pen || !pen.animalId) return { ok: false, msg: 'Không có con!' };
     if (this.isReady(pen)) return { ok: false, msg: 'Đã sẵn sàng thu hoạch!' };
-    if (pen.feedId) return { ok: false, msg: 'Ô này đã cho ăn cám rồi!' };
+    if (this.isFertBoostActive(pen)) return { ok: false, msg: 'Ô này đang còn hiệu lực cám!' };
+    // Hết hiệu lực → cho phép bón lại
+    if (pen.feedId) { pen.feedId = null; pen.feedAt = null; }
     const have = (currentPlayer.inventory.feeds && currentPlayer.inventory.feeds[fertId]) || 0;
     if (have < 1) return { ok: false, msg: 'Không đủ cám bón!' };
     const fert = this.getFeed(fertId);
@@ -1495,7 +1513,8 @@ const Game = {
     let count = 0;
     for (const pen of currentPlayer.pens) {
       if (count >= max) break;
-      if (!pen.animalId || this.isReady(pen) || pen.feedId) continue;
+      if (!pen.animalId || this.isReady(pen) || this.isFertBoostActive(pen)) continue;
+      if (pen.feedId) { pen.feedId = null; pen.feedAt = null; }
       let fert = available.find(f => (stock[f.id] || 0) > 0);
       if (!fert) break;
       stock[fert.id]--;
@@ -1618,8 +1637,20 @@ const Game = {
 
   
   pickBestFeedFromBag() {
-    if (!currentPlayer || !currentPlayer.inventory || !currentPlayer.inventory.feeds) return null;
+    if (!currentPlayer || !currentPlayer.inventory) return null;
+    if (!currentPlayer.inventory.feeds || typeof currentPlayer.inventory.feeds !== 'object') {
+      currentPlayer.inventory.feeds = {};
+    }
     const bag = currentPlayer.inventory.feeds;
+    // Gộp id cũ phan-* → cam-*
+    try {
+      Object.keys(this.FEED_ID_ALIASES || {}).forEach(oldId => {
+        if (!bag[oldId]) return;
+        const nid = this.FEED_ID_ALIASES[oldId];
+        bag[nid] = (Number(bag[nid]) || 0) + (Number(bag[oldId]) || 0);
+        delete bag[oldId];
+      });
+    } catch (_) {}
     let best = null;
     let bestReduce = -1;
     Object.keys(bag).forEach(id => {
@@ -1796,6 +1827,19 @@ const Game = {
     } else {
       parts.push('không cho ăn phân');
     }
+    // Chạy Tiên ngay sau khi lưu cấu hình (không đợi chu kỳ 3h)
+    try {
+      const now = (typeof nowMs === 'function' ? nowMs() : Date.now());
+      this.ensureFarms();
+      this.forEachFarm((pens, gi) => {
+        if (!this.isFairyFarmEnabled(gi)) return;
+        const prev = currentPlayer.pens;
+        currentPlayer.pens = pens;
+        this.runFairyCare(now);
+        currentPlayer.pens = prev;
+      });
+      currentPlayer.lastFairyCare = now;
+    } catch (e) { console.warn('fairy care after config', e); }
     return { ok: true, msg: 'Đã lưu: ' + parts.join(' · ') };
   },
 
@@ -1807,8 +1851,13 @@ const Game = {
     }
     const bag = currentPlayer.inventory.feeds;
     if (cfg.fertSource === 'specific') {
-      const id = cfg.fertId;
-      const qty = Math.floor(Number(bag[id]) || 0);
+      let id = this.normalizeFeedId(cfg.fertId);
+      // thử cả id gốc nếu alias khác
+      let qty = Math.floor(Number(bag[id]) || 0);
+      if (qty < 1 && cfg.fertId && bag[cfg.fertId]) {
+        id = cfg.fertId;
+        qty = Math.floor(Number(bag[id]) || 0);
+      }
       if (!id || qty < 1) {
         
         const best = this.pickBestFeedFromBag();

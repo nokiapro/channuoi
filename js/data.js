@@ -4189,6 +4189,45 @@ function migratePlayerSchema(player) {
     }
   }
 
+
+  // Kho cám: legacy fertilizer / phan-* → feeds / cam-*
+  if (player.inventory) {
+    if (!player.inventory.feeds || typeof player.inventory.feeds !== 'object') {
+      player.inventory.feeds = {};
+    }
+    const bag = player.inventory.feeds;
+    // object cũ
+    if (player.inventory.fertilizer && typeof player.inventory.fertilizer === 'object') {
+      Object.keys(player.inventory.fertilizer).forEach(k => {
+        const q = Number(player.inventory.fertilizer[k]) || 0;
+        if (q > 0) bag[k] = (Number(bag[k]) || 0) + q;
+      });
+      delete player.inventory.fertilizer;
+    }
+    if (player.inventory.fert && typeof player.inventory.fert === 'object') {
+      Object.keys(player.inventory.fert).forEach(k => {
+        const q = Number(player.inventory.fert[k]) || 0;
+        if (q > 0) bag[k] = (Number(bag[k]) || 0) + q;
+      });
+      delete player.inventory.fert;
+    }
+    // map id cũ phan-* sang cam-* (nếu còn)
+    const idMap = {
+      'phan-thuong': 'cam-thuong',
+      'phan-xanh': 'cam-xanh',
+      'phan-vang': 'cam-vang',
+      'phan-do': 'cam-do'
+    };
+    Object.keys(idMap).forEach(oldId => {
+      if (bag[oldId]) {
+        const q = Number(bag[oldId]) || 0;
+        const nid = idMap[oldId];
+        bag[nid] = (Number(bag[nid]) || 0) + q;
+        delete bag[oldId];
+      }
+    });
+  }
+
   // stats.planted → raised
   if (player.stats) {
     if (player.stats.planted != null && player.stats.raised == null) {
