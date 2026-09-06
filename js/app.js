@@ -1843,6 +1843,8 @@ function mountAllPillDropdowns(root) {
 function renderFarmSwitcher() {
   const host = document.getElementById('farm-switcher');
   if (!host || !currentPlayer || typeof Game === 'undefined') return;
+  // Đang mở menu chọn trại → không rebuild DOM (tránh nhấp nháy / mất click)
+  if (host.querySelector('#farm-dd-menu:not([hidden])') || host.querySelector('.pill-dd.open')) return;
   if (typeof Game.ensureFarms === 'function') Game.ensureFarms();
   const n = Game.getFarmCount();
   const active = Game.getActiveFarmIndex();
@@ -1940,7 +1942,7 @@ function renderFarm() {
   // Đang chạy NYC care — không render (tránh nhảy trại khi raiseMultiple tạm đổi activeFarm)
   if (typeof Game !== 'undefined' && Game._nycBusy) return;
   if (typeof Game.ensureFarms === 'function') Game.ensureFarms();
-  renderFarmSwitcher();
+  try { renderFarmSwitcher(); } catch (_) {}
   
   if (typeof Game.resetExpiredBoosts === 'function') {
     const changed = Game.resetExpiredBoosts();
@@ -4571,9 +4573,10 @@ function tickFarmCare(opts) {
       else if (typeof savePlayer === 'function') savePlayer().catch(() => {});
       
       const farmPage = document.getElementById('page-farm');
-      if (farmPage && farmPage.classList.contains('active') && typeof renderFarm === 'function') {
+      const ddOpen = !!(document.querySelector('#farm-dd-menu:not([hidden])') || document.querySelector('#farm-dropdown.open'));
+      if (!ddOpen && farmPage && farmPage.classList.contains('active') && typeof renderFarm === 'function') {
         renderFarm();
-      } else if (doRender && typeof renderFarm === 'function') {
+      } else if (!ddOpen && doRender && typeof renderFarm === 'function') {
         
       }
       if (typeof softUpdatePenModal === 'function') softUpdatePenModal();
@@ -4669,8 +4672,10 @@ function softUpdateFarmUI() {
     const boostEl = el.querySelector('[data-role="boost"]');
     if (boostEl) boostEl.remove();
   });
-  if (needFull) renderFarm();
-  else updateGlobalTimer();
+  if (needFull) {
+    const ddOpen = !!(document.querySelector('#farm-dd-menu:not([hidden])') || document.querySelector('#farm-dropdown.open'));
+    if (!ddOpen) renderFarm();
+  } else updateGlobalTimer();
   updateFairyBadge();
   updateNycBadge();
   updateHelperBadge();

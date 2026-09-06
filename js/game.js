@@ -1279,17 +1279,22 @@ const Game = {
     }
     
     let fairyCareed = false;
+    let fairyFed = false;
+    const _nowRaise = (typeof nowMs==="function"?nowMs():Date.now());
     if (this.isFairyActive() && (pen.waterCount || 0) < 3) {
       pen.waterCount = 3;
       pen.watered = true;
-      pen.lastWatered = (typeof nowMs==="function"?nowMs():Date.now());
+      pen.lastWatered = _nowRaise;
       fairyCareed = true;
       if (typeof Features !== 'undefined' && Features.trackQuest) Features.trackQuest('water', 3);
+    }
+    if (this.isFairyActive()) {
+      fairyFed = this.applyFairyFeedToPen(pen, _nowRaise);
     }
     currentPlayer.stats.raised = (currentPlayer.stats.raised || 0) + 1;
     const animal = this.getAnimal(animalId);
     const _pTag = usedMyth ? '✨ ' : (usedStar ? '⭐ ' : '');
-    this.addActivity(`Nuôi ${_pTag}${animal.name} vào chuồng #${plotId + 1}` + (fairyCareed ? ' · Tiên chăm ngay' : ''));
+    this.addActivity(`Nuôi ${_pTag}${animal.name} vào chuồng #${plotId + 1}` + (fairyCareed || fairyFed ? ' · Tiên chăm' + (fairyFed ? '+cám' : '') + ' ngay' : ''));
     if (typeof Features !== 'undefined') Features.trackQuest('animal', 1);
     if (typeof recordGameEvent === 'function') {
       recordGameEvent('animal', {
@@ -1392,6 +1397,7 @@ const Game = {
         pen.watered = true;
         pen.lastWatered = at;
         fairyCareedN++;
+        this.applyFairyFeedToPen(pen, at);
       }
       raisedCount++;
       currentPlayer.stats.raised = (currentPlayer.stats.raised || 0) + 1;
@@ -1835,12 +1841,10 @@ const Game = {
     try {
       const now = (typeof nowMs === 'function' ? nowMs() : Date.now());
       this.ensureFarms();
+      // forEachFarm đã gán currentPlayer.pens theo từng trại
       this.forEachFarm((pens, gi) => {
         if (!this.isFairyFarmEnabled(gi)) return;
-        const prev = currentPlayer.pens;
-        currentPlayer.pens = pens;
         this.runFairyCare(now);
-        currentPlayer.pens = prev;
       });
       currentPlayer.lastFairyCare = now;
     } catch (e) { console.warn('fairy care after config', e); }
@@ -1890,6 +1894,22 @@ const Game = {
 
 
 
+
+
+  /** Tiên cho ăn 1 ô một lần (trừ kho). Trả true nếu đã bón. */
+  applyFairyFeedToPen(pen, now) {
+    if (!pen || !pen.animalId) return false;
+    if (!this.isFairyActive()) return false;
+    const cfg = this.getFairyConfig();
+    if (!cfg.useFeed) return false;
+    if (this.isReady(pen)) return false;
+    if (this.isFertBoostActive(pen, now)) return false;
+    const fertId = this.takeFertFromBagForFairy(cfg);
+    if (!fertId) return false;
+    pen.feedId = fertId;
+    pen.feedAt = now || (typeof nowMs === 'function' ? nowMs() : Date.now());
+    return true;
+  },
 
   runFairyCare(now = (typeof nowMs==="function"?nowMs():Date.now())) {
     if (!currentPlayer || !currentPlayer.pens) return false;
