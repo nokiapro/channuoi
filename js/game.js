@@ -2502,7 +2502,8 @@ const Game = {
 
     
     const nycBuffOn = this.getBuffPrefs().nycEnabled !== false;
-    const nycUntilMs = Number(currentPlayer.nycUntil) || 0;
+    const nycUntilMs = this.toMs(currentPlayer.nycUntil) || Number(currentPlayer.nycUntil) || 0;
+    if (nycUntilMs > 0) currentPlayer.nycUntil = nycUntilMs;
     const nycCovered = nycBuffOn && nycUntilMs > from;
     const activeFarm = currentPlayer.activeFarm || 0;
     this.syncActiveFarm();
@@ -2730,8 +2731,13 @@ const Game = {
       // Chuẩn hóa nycUntil
       const nycUntilMs = this.toMs(currentPlayer.nycUntil) || Number(currentPlayer.nycUntil) || 0;
       if (nycUntilMs > 0) currentPlayer.nycUntil = nycUntilMs;
+      // NYC còn hạn giao với cửa sổ offline (hoặc đang bật realtime)
       const canReRaise = nycBuffOn && (
-        nycUntilMs > endMs || nycUntilMs > from || this.isNycActive() || this.isNycActiveAt(endMs) || this.isNycActiveAt(from)
+        this.isNycActive() ||
+        this.isNycActiveAt(from) ||
+        this.isNycActiveAt(endMs) ||
+        (nycUntilMs > from) ||
+        (nycUntilMs > endMs)
       );
 
       // Pre-buff mọi ô NYC — giữ nguyên raisedAt hợp lệ
@@ -2897,15 +2903,18 @@ const Game = {
                 penCycles = 1 + Math.floor(Math.max(0, endMs - firstReadyAt) / growMs);
               }
               // Nếu isReadyAt tại endMs mà math ra 0 → vẫn cho 1 vòng (tránh lệch do mult/weather)
-              if (plotCycles < 1 && this.isReadyAt(pen, endMs)) {
+              if (penCycles < 1 && this.isReadyAt(pen, endMs)) {
                 penCycles = 1;
                 firstReadyAt = endMs;
               }
-              if (!canReRaise) penCycles = Math.min(plotCycles, 1);
-              penCycles = Math.max(0, Math.min(600, penCycles));
+              // Không nuôi lại được → tối đa 1 vụ (thu rồi để trống)
+              if (!canReRaise) penCycles = Math.min(penCycles, 1);
+              // Bảo vệ NaN / Infinity
+              if (!Number.isFinite(penCycles) || penCycles < 0) penCycles = 0;
+              penCycles = Math.max(0, Math.min(600, Math.floor(penCycles)));
 
               // Không có vòng chín thật sự → giữ nguyên raisedAt, bỏ qua ô này
-              if (plotCycles < 1) continue;
+              if (penCycles < 1) continue;
 
               for (let c = 0; c < penCycles; c++) {
                 const harvestT = Math.min(endMs, firstReadyAt + c * growMs);
