@@ -1959,12 +1959,14 @@ function renderFarm() {
   if (weatherIconEl) {
     const faMap = {
       '☀️': 'fa-sun', '🌤️': 'fa-cloud-sun', '⛅': 'fa-cloud-sun',
-      '🌦️': 'fa-cloud-sun-rain', '🌧️': 'fa-cloud-showers-heavy', '🌈': 'fa-rainbow'
+      '🌦️': 'fa-cloud-sun-rain', '🌧️': 'fa-cloud-showers-heavy', '🌈': 'fa-rainbow',
+      '🌾': 'fa-wheat-awn', '💨': 'fa-wind', '🌡️': 'fa-temperature-half',
+      '🌙': 'fa-moon', '🍃': 'fa-leaf'
     };
     const fa = faMap[weather.icon] || 'fa-cloud-sun';
     weatherIconEl.innerHTML = `<i class="fa-solid ${fa}"></i>`;
   }
-  const _wt = document.getElementById('weather-text'); if (_wt) _wt.textContent = weather.text + ` (${Math.round(weather.mult * 100)}%)`;
+  const _wt = document.getElementById('weather-text'); if (_wt) _wt.textContent = weather.text;
   updateCoins();
 
   const pens = Array.isArray(currentPlayer.pens) ? currentPlayer.pens : Object.values(currentPlayer.pens || {});
@@ -4690,40 +4692,9 @@ function softUpdateFarmUI() {
 
 
 function updateGlobalTimer() {
-  const btn = document.getElementById('btn-global-timer');
-  const textEl = document.getElementById('global-timer-text');
-  if (!textEl || !currentPlayer) return;
-
-  const setCycle = (label, ready) => {
-    textEl.textContent = label;
-    if (btn) {
-      btn.classList.toggle('ready', !!ready);
-      btn.classList.toggle('is-empty', label === '--:--:--');
-    }
-  };
-
-  // Nút đếm ngược thu hoạch cạnh Hỗ trợ (con còn ≤ 10s)
-  updateHarvestCountdownButton();
-
-  // Đếm ngược 30 phút đến trận mưa tiếp theo (Tiên chăm khi mưa)
-  if (typeof Game !== 'undefined' && Game.getRainRemainingSec) {
-    const raining = !!(Game.raining && Game.rainUntil && Game.rainUntil > (typeof nowMs === 'function' ? nowMs() : Date.now()));
-    const remain = Game.getRainRemainingSec();
-    const label = Game.formatTime ? Game.formatTime(remain) : String(remain);
-    setCycle(label, !raining && remain <= 0);
-    if (btn) {
-      if (raining) {
-        btn.title = `🌧️ Đang mưa — Tiên đang chăm · còn ${label}`;
-      } else if (remain <= 0) {
-        btn.title = '🌧️ Sắp mưa / đang kích hoạt mưa — Tiên sẽ tưới';
-      } else {
-        btn.title = `🌧️ Mưa sau: ${label} (mỗi 30 phút · Tiên chăm khi mưa)`;
-      }
-    }
-  } else {
-    setCycle('--:--:--', false);
-    if (btn) btn.title = 'Đếm ngược mưa (30 phút)';
-  }
+  if (!currentPlayer) return;
+  // Chỉ cập nhật đếm ngược sắp thu (nút cạnh Hỗ trợ) — đã bỏ global-timer mưa
+  if (typeof updateHarvestCountdownButton === 'function') updateHarvestCountdownButton();
   if (typeof refreshSupportMenuStatus === 'function') refreshSupportMenuStatus();
 }
 
@@ -4847,12 +4818,14 @@ if (!window.__careVisibilityBound) {
     }
     try {
       if (typeof currentUser !== 'undefined' && currentUser && currentUser.uid) {
-        const key = 'vuon_away_' + currentUser.uid;
-        const prev = Number(localStorage.getItem(key)) || 0;
-        // Giữ mốc away sớm nhất trong phiên rời (tránh heartbeat/ghi đè làm mất cửa sổ offline)
-        if (!prev || t < prev || (t - prev) > 120000) {
-          localStorage.setItem(key, String(t));
-        }
+        const keys = ['trai_away_' + currentUser.uid, 'vuon_away_' + currentUser.uid];
+        keys.forEach(key => {
+          const prev = Number(localStorage.getItem(key)) || 0;
+          // Giữ mốc away sớm nhất trong phiên rời
+          if (!prev || t < prev || (t - prev) > 120000) {
+            localStorage.setItem(key, String(t));
+          }
+        });
       }
     } catch (_) {}
     try { if (typeof backupPlayerLocal === 'function') backupPlayerLocal(); } catch (_) {}
@@ -4933,10 +4906,12 @@ if (!window.__careVisibilityBound) {
         
         try {
           if (typeof currentUser !== 'undefined' && currentUser && currentUser.uid) {
-            const key = 'vuon_away_' + currentUser.uid;
-            if (!localStorage.getItem(key) && currentPlayer.lastSeenAt) {
-              localStorage.setItem(key, String(currentPlayer.lastSeenAt));
-            }
+            ['trai_away_', 'vuon_away_'].forEach(prefix => {
+              const key = prefix + currentUser.uid;
+              if (!localStorage.getItem(key) && currentPlayer.lastSeenAt) {
+                localStorage.setItem(key, String(currentPlayer.lastSeenAt));
+              }
+            });
           }
         } catch (_) {}
         return;

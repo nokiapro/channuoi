@@ -578,18 +578,20 @@ const Game = {
   },
 
   getWeather() {
+    // Khí hậu trại (ảnh hưởng tốc độ nuôi nhẹ) — theme chăn nuôi
     if (this.raining && (typeof nowMs==="function"?nowMs():Date.now()) < this.rainUntil) {
-      return { icon: '🌧️', text: 'Đang mưa!', mult: 1.25 };
+      return { icon: '🌧️', text: 'Mưa — đàn vật mát', mult: 1.15 };
     }
     const h = new Date().getHours();
-    const weathers = [
-      { icon: '☀️', text: 'Nắng đẹp', mult: 1.1 },
-      { icon: '🌤️', text: 'Nắng nhẹ', mult: 1.05 },
-      { icon: '⛅', text: 'Ít mây', mult: 1.0 },
-      { icon: '🌦️', text: 'Có mưa rào', mult: 1.08 },
-      { icon: '🌈', text: 'Sau mưa', mult: 1.12 }
+    const climates = [
+      { icon: '🌾', text: 'Đồng cỏ tốt', mult: 1.1 },
+      { icon: '💨', text: 'Gió nhẹ trên chuồng', mult: 1.05 },
+      { icon: '🌡️', text: 'Mát mẻ dễ nuôi', mult: 1.08 },
+      { icon: '☀️', text: 'Nắng gắt — cho uống nước', mult: 0.98 },
+      { icon: '🌙', text: 'Đêm yên tĩnh', mult: 1.03 },
+      { icon: '🍃', text: 'Không khí trong lành', mult: 1.06 }
     ];
-    return weathers[h % weathers.length];
+    return climates[h % climates.length];
   },
 
   
@@ -1600,7 +1602,6 @@ const Game = {
 
   getFertDisplayState(pen, now = (typeof nowMs==="function"?nowMs():Date.now())) {
     const rem = this.getFertBoostRemainingMs(pen, now);
-    const near = rem > 0 && rem <= this.BOOST_PREVIEW_MS;
     if (!pen || !pen.feedId || rem <= 0) {
       return {
         active: false,
@@ -1612,23 +1613,11 @@ const Game = {
     }
     const fert = this.getFeed(pen.feedId);
     const name = fert ? `${fert.icon || '🥣'} ${fert.name}`.trim() : String(pen.feedId);
-    const timeTxt = (typeof this.formatTime === 'function')
-      ? this.formatTime(Math.ceil(rem / 1000))
-      : (Math.ceil(rem / 1000) + 's');
-    if (near) {
-      return {
-        active: true,
-        nearExpiry: true,
-        remainingMs: rem,
-        text: `⚠️ Sắp hết: ${name} · còn ${timeTxt}`,
-        fertId: pen.feedId
-      };
-    }
     return {
       active: true,
-      nearExpiry: false,
+      nearExpiry: rem > 0 && rem <= this.BOOST_PREVIEW_MS,
       remainingMs: rem,
-      text: `✅ Đã cho ăn: ${name} · còn ${timeTxt}`,
+      text: `✅ ${name}`,
       fertId: pen.feedId
     };
   },
@@ -2354,7 +2343,10 @@ const Game = {
     let awayMark = 0;
     try {
       if (typeof currentUser !== 'undefined' && currentUser && currentUser.uid) {
-        awayMark = Number(localStorage.getItem('vuon_away_' + currentUser.uid)) || 0;
+        const _uid = currentUser.uid;
+        const a1 = Number(localStorage.getItem('trai_away_' + _uid)) || 0;
+        const a2 = Number(localStorage.getItem('vuon_away_' + _uid)) || 0;
+        awayMark = (a1 && a2) ? Math.min(a1, a2) : (a1 || a2);
       }
     } catch (_) {}
 
@@ -2388,6 +2380,7 @@ const Game = {
       try {
         if (typeof currentUser !== 'undefined' && currentUser && currentUser.uid) {
           localStorage.removeItem('vuon_away_' + currentUser.uid);
+          localStorage.removeItem('trai_away_' + currentUser.uid);
         }
       } catch (_) {}
       return { ok: true, changed: false, notes: [], offlineMs: offlineGap, skipped: true };
@@ -3090,6 +3083,32 @@ const Game = {
       }
     }
 
+    // Không NYC: thu 1 lần các ô đã chín khi quay lại (progress vẫn chạy theo raisedAt)
+    try {
+      const nycOn = typeof nycBuffOn !== 'undefined' ? nycBuffOn : this.isNycActive();
+      if (!nycOn) {
+        for (let gi = 0; gi < (currentPlayer.farms || []).length; gi++) {
+          let pens = currentPlayer.farms[gi];
+          if (!Array.isArray(pens)) continue;
+          currentPlayer.activeFarm = gi;
+          currentPlayer.pens = pens;
+          for (let i = 0; i < pens.length; i++) {
+            const pen = pens[i];
+            if (!pen || !pen.animalId) continue;
+            if (!this.isReadyAt(pen, now)) continue;
+            const r = this._nycHarvestOneAt(pen, now, gi, null, false, true, true);
+            if (r && r.harvested) {
+              totalHarvest += r.harvested || 0;
+              totalYieldAmount += r.amount || 0;
+              changed = true;
+              const nm = r.animalName || 'con';
+              notes.push('Thu ' + (r.amount || 0) + ' ' + nm + ' (chín lúc offline)');
+            }
+          }
+        }
+      }
+    } catch (e) { console.warn('offline ready harvest', e); }
+
     currentPlayer.lastSeenAt = now;
     currentPlayer.lastCatchUpAt = now;
     delete currentPlayer._needOfflineFromLog;
@@ -3097,6 +3116,7 @@ const Game = {
     try {
       if (typeof currentUser !== 'undefined' && currentUser && currentUser.uid) {
         localStorage.removeItem('vuon_away_' + currentUser.uid);
+        localStorage.removeItem('trai_away_' + currentUser.uid);
       }
     } catch (_) {}
     if (fromLog) {
